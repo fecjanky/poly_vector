@@ -4,36 +4,37 @@ addons:
   apt:
     sources:
         - ubuntu-toolchain-r-test
-        - llvm-toolchain-precise-3.8
+        - llvm-toolchain-trusty-5.0
     packages:
-        - g++-5
-        - gcc-5
-        - clang-3.8
+        - g++-7
+        - gcc-7
+        - clang-5.0
 
 matrix:
   include:
     - compiler: gcc
       env:
-        - CC_USED=gcc-5
-        - CXX_USED=g++-5
+        - CC_USED=gcc-7
+        - CXX_USED=g++-7
+        - GCOV_USED=gcov-7
         - CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=COVERAGE"
       install:
-        - pip install --user cpp-coveralls
+        - pip install --user urllib3[secure] cpp-coveralls
       after_success:
-        - coveralls --gcov $(which gcov-5) --include include --gcov-options '\-lmpcu' --root .. --build-root .
+        - which $GCOV_USED
+        - coveralls --gcov $(which $GCOV_USED) --include include  --gcov-options '\-lmpcu' --root .. --build-root .
 
     - compiler: clang
       env:
-        - CC_USED=clang-3.8
-        - CXX_USED=clang++-3.8
-        - CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=SANITIZE"
-        - ASAN_OPTIONS="check_initialization_order=1:detect_stack_use_after_return=1"
+        - CC_USED=clang-5.0
+        - CXX_USED=clang++-5.0
+        - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=Release
 
 before_install:
-  - wget --no-check-certificate https://cmake.org/files/v3.4/cmake-3.4.0-Linux-x86_64.tar.gz 
-  - tar -xzf cmake-3.4.0-Linux-x86_64.tar.gz
-  - export PATH="$(readlink -f cmake-3.4.0-Linux-x86_64/bin/):$PATH"
-
+  - wget --no-check-certificate https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz 
+  - tar -xzf cmake-3.10.0-Linux-x86_64.tar.gz 
+  - export PATH="$(readlink -f cmake-3.10.0-Linux-x86_64/bin/):$PATH"
+  
 before_script:
   - git submodule init
   - git submodule update
@@ -41,7 +42,9 @@ before_script:
   - cd build
   - export CC=$CC_USED
   - export CXX=$CXX_USED
+  - $CC --version
+  - $CXX --version
   - cmake ../ $CMAKE_FLAGS
 
 script:
-  - CTEST_OUTPUT_ON_FAILURE=TRUE make all test
+- CTEST_OUTPUT_ON_FAILURE=TRUE make all test
