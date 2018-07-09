@@ -1,9 +1,9 @@
+#include "catch_ext.hpp"
 #include <algorithm>
 #include <catch.hpp>
+#include <cstring>
 #include <iostream>
 #include <vector>
-
-#include "catch_ext.hpp"
 
 #include "poly_vector.h"
 #include "test_poly_vector.h"
@@ -305,8 +305,8 @@ TYPE_P_TEST_CASE("poly vector modifiers test",
       REQUIRE(data == v.data());
       REQUIRE(size == v.sizes());
       REQUIRE(caps == v.capacities());
-      REQUIRE(0 ==
-              memcmp(ref_storage.data(), v.data().first, ref_storage.size()));
+      REQUIRE(0 == std::memcmp(
+                     ref_storage.data(), v.data().first, ref_storage.size()));
     } else {
       REQUIRE_NOTHROW(v.push_back(Impl2{}));
     }
