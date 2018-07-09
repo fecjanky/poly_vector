@@ -9,6 +9,10 @@ set(SRC
         src/test_poly_vector.cpp
 )
 
+if (MSVC)
+    set(SRC include/catch_ext.hpp include/test_poly_vector.h ${SRC})
+endif (MSVC)
+
 add_executable(poly_vector_test  ${SRC})
 
 target_link_libraries(poly_vector_test poly_vector_lib Catch_lib)
