@@ -287,8 +287,8 @@ TYPE_P_TEST_CASE("poly vector modifiers test",
   SECTION("strog_guarantee_when_there_is_an_exception_during_push_back_w_"
           "reallocation")
   {
-
-    v[1].set_throw_on_copy_construction(true);
+    v.push_back(Impl1{});
+    v.back().set_throw_on_copy_construction(true);
     while (v.capacity() - v.size() > 0) {
       v.push_back(Impl1{});
     }
