@@ -10,7 +10,7 @@ set(SRC
 )
 
 if (MSVC)
-    set(SRC include/catch_ext.hpp include/test_poly_vector.h ${SRC})
+    set(SRC include/catch_ext.hpp include/test_poly_vector.h ${POLY_VECTOR_NATVIS_FILE} ${SRC})
 endif (MSVC)
 
 add_executable(poly_vector_test  ${SRC})

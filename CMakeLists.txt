@@ -13,5 +13,7 @@ add_library(poly_vector_lib INTERFACE)
 
 target_include_directories(poly_vector_lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+get_filename_component(POLY_VECTOR_NATVIS_FILE visualizer/poly_vector.natvis ABSOLUTE)
+
 add_subdirectory(test)
 add_subdirectory(benchmark)
