@@ -6,6 +6,9 @@ template<template<typename> class Func, typename... Ts>
 struct for_each_type;
 }
 
+#define INTERNAL_STRINGIFY_IMPL(X) #X
+#define INTERNAL_STRINGIFY(X) INTERNAL_STRINGIFY_IMPL(X)
+
 #define INTERNAL_TYPE_P_TEST_CASE(TESTSTRUCT, NAME, DESCR, TPARAM, ...)        \
   template<typename TPARAM>                                                    \
   struct TESTSTRUCT                                                            \
@@ -14,7 +17,8 @@ struct for_each_type;
   };                                                                           \
   TEST_CASE(NAME, DESCR)                                                       \
   {                                                                            \
-    ::detail::for_each_type<TESTSTRUCT, __VA_ARGS__>::execute();               \
+    ::detail::for_each_type<TESTSTRUCT, __VA_ARGS__>::execute(                 \
+      INTERNAL_STRINGIFY(TPARAM));                                             \
   }                                                                            \
   template<typename TPARAM>                                                    \
   void TESTSTRUCT<TPARAM>::execute()
@@ -33,16 +37,17 @@ namespace detail {
 template<template<typename> class Func>
 struct for_each_type<Func>
 {
-  static void execute() {}
+  static void execute(const std::string&) {}
 };
 
 template<template<typename> class Func, typename T, typename... Ts>
 struct for_each_type<Func, T, Ts...>
 {
-  static void execute()
+  static void execute(const std::string& paramName)
   {
-    Func<T>::execute();
-    for_each_type<Func, Ts...>::execute();
+
+    SECTION(paramName + "=" + typeid(T).name()) { Func<T>::execute(); }
+    for_each_type<Func, Ts...>::execute(paramName);
   }
 };
 }
