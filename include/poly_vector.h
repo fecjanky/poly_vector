@@ -912,12 +912,12 @@ private:
     elem_ptr_pointer       end_elem() noexcept;
     elem_ptr_const_pointer begin_elem() const noexcept;
     elem_ptr_const_pointer end_elem() const noexcept;
+    void_pointer           free_storage() const noexcept;
     ////////////////////////////
     // Members
     ////////////////////////////
     elem_ptr_pointer _free_elem;
     void_pointer     _begin_storage;
-    void_pointer     _free_storage;
     size_t           _align_max;
 };
 
@@ -938,7 +938,6 @@ template <class I, class A, class C>
 inline poly_vector<I, A, C>::poly_vector()
     : _free_elem {}
     , _begin_storage {}
-    , _free_storage {}
     , _align_max { 1 }
 {
 }
@@ -948,7 +947,6 @@ inline poly_vector<I, A, C>::poly_vector(const allocator_type& alloc)
     : poly_vector_impl::allocator_base<allocator_type>(alloc)
     , _free_elem {}
     , _begin_storage {}
-    , _free_storage {}
     , _align_max { 1 } {};
 
 template <class I, class A, class C>
@@ -956,7 +954,6 @@ inline poly_vector<I, A, C>::poly_vector(const poly_vector& other)
     : poly_vector_impl::allocator_base<allocator_type>(other.base())
     , _free_elem { begin_elem() }
     , _begin_storage { begin_elem() + other.capacity() }
-    , _free_storage { _begin_storage }
     , _align_max { other._align_max }
 {
     set_ptrs(other.poly_uninitialized_copy(base().get_allocator_ref(), begin_elem(), other.size()));
@@ -967,11 +964,10 @@ inline poly_vector<I, A, C>::poly_vector(poly_vector&& other)
     : poly_vector_impl::allocator_base<allocator_type>(std::move(other.base()))
     , _free_elem { other._free_elem }
     , _begin_storage { other._begin_storage }
-    , _free_storage { other._free_storage }
     , _align_max { other._align_max }
 {
-    other._begin_storage = other._free_storage = other._free_elem = nullptr;
-    other._align_max                                              = default_alignement;
+    other._begin_storage = other._free_elem = nullptr;
+    other._align_max                        = default_alignement;
 }
 
 template <class I, class A, class C>
@@ -1032,7 +1028,6 @@ inline void poly_vector<I, A, C>::swap(poly_vector& x) noexcept
     base().swap(x.base());
     swap(_free_elem, x._free_elem);
     swap(_begin_storage, x._begin_storage);
-    swap(_free_storage, x._free_storage);
     swap(_align_max, x._align_max);
 }
 
@@ -1383,7 +1378,7 @@ inline void poly_vector<I, A, C>::tidy() noexcept
     clear();
     for (auto i = begin_elem(); i != begin_elem() + capacity(); ++i)
         base().destroy(i);
-    _begin_storage = _free_storage = _free_elem = nullptr;
+    _begin_storage = _free_elem = nullptr;
     my_base::tidy();
 }
 
@@ -1426,15 +1421,13 @@ inline auto poly_vector<I, A, C>::erase_internal_range(elem_ptr_pointer first, e
             free_range              = std::make_pair(next_storage(free_range.first, first->size(), _align_max), next_storage(free_range.second, first->size(), _align_max));
         } catch (...) {
             destroy_range(last, end_elem());
-            _free_elem    = first;
-            _free_storage = static_cast<pointer>((end_elem() - 1)->ptr.first) + (end_elem() - 1)->size();
+            _free_elem = first;
             throw;
         }
     }
     for (; last != end_elem(); ++last, ++first)
         swap(*first, *last);
-    _free_elem    = first;
-    _free_storage = static_cast<pointer>((end_elem() - 1)->ptr.first) + (end_elem() - 1)->size();
+    _free_elem = first;
     return iterator(return_iterator);
 }
 
@@ -1442,8 +1435,7 @@ template <class I, class A, class C>
 inline void poly_vector<I, A, C>::clear_till_end(elem_ptr_pointer first) noexcept
 {
     destroy_range(first, _free_elem);
-    _free_elem    = first;
-    _free_storage = (_free_elem != begin_elem()) ? static_cast<pointer>(_free_elem[-1].ptr.first) + _free_elem[-1].size() : _begin_storage;
+    _free_elem = first;
 }
 
 template <class I, class A, class C>
@@ -1451,7 +1443,6 @@ inline void poly_vector<I, A, C>::set_ptrs(poly_copy_descr p)
 {
     _free_elem     = std::get<0>(p);
     _begin_storage = std::get<1>(p);
-    _free_storage  = std::get<2>(p);
 }
 
 template <class I, class A, class C>
@@ -1460,7 +1451,6 @@ inline void poly_vector<I, A, C>::swap_ptrs(poly_vector&& rhs)
     using std::swap;
     swap(_free_elem, rhs._free_elem);
     swap(_begin_storage, rhs._begin_storage);
-    swap(_free_storage, rhs._free_storage);
 }
 
 template <class I, class A, class C>
@@ -1474,9 +1464,8 @@ inline void poly_vector<I, A, C>::push_back_new_elem(T&& obj)
 
     assert(can_construct_new_elem(s, a));
     assert(_align_max >= a);
-    auto nas      = next_aligned_storage(_align_max);
-    *_free_elem   = elem_ptr(std::forward<T>(obj), nas, base().construct(static_cast<typename traits::pointer>(nas), std::forward<T>(obj)));
-    _free_storage = static_cast<pointer>(_free_elem->ptr.first) + s;
+    auto nas    = next_aligned_storage(_align_max);
+    *_free_elem = elem_ptr(std::forward<T>(obj), nas, base().construct(static_cast<typename traits::pointer>(nas), std::forward<T>(obj)));
     ++_free_elem;
 }
 
@@ -1518,14 +1507,14 @@ inline bool poly_vector<I, A, C>::can_construct_new_elem(size_t s, size_t align)
 {
     if (align > _align_max)
         return false;
-    auto free = static_cast<pointer>(next_aligned_storage(_free_storage, _align_max));
+    auto free = static_cast<pointer>(next_aligned_storage(free_storage(), _align_max));
     return free + s <= this->end_storage();
 }
 
 template <class I, class A, class C>
 inline auto poly_vector<I, A, C>::next_aligned_storage(size_t align) const noexcept -> void_pointer
 {
-    return next_aligned_storage(_free_storage, align);
+    return next_aligned_storage(free_storage(), align);
 }
 
 template <class I, class A, class C>
@@ -1558,6 +1547,15 @@ inline auto poly_vector<I, A, C>::end_elem() const noexcept -> elem_ptr_const_po
     return static_cast<elem_ptr_const_pointer>(_free_elem);
 }
 
+template <class IF, class Allocator, class CloningPolicy>
+inline auto poly_vector<IF, Allocator, CloningPolicy>::free_storage() const noexcept -> void_pointer
+{
+    if (_free_elem == this->storage())
+        return this->_begin_storage;
+    const auto prev_elem = std::prev(_free_elem);
+    return static_cast<pointer>(prev_elem->ptr.first) + prev_elem->size();
+}
+
 template <class I, class A, class C>
 inline size_t poly_vector<I, A, C>::max_alignment() const noexcept
 {
@@ -1574,7 +1572,7 @@ template <class I, class A, class C>
 inline void poly_vector<I, A, C>::init_ptrs(size_t cap) noexcept
 {
     _free_elem     = static_cast<elem_ptr_pointer>(base().storage());
-    _begin_storage = _free_storage = begin_elem() + cap;
+    _begin_storage = begin_elem() + cap;
 }
 
 template <class I, class A, class C>
