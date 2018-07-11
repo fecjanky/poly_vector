@@ -395,13 +395,14 @@ namespace estd
         using IF = typename  std::allocator_traits<Allocator>::value_type;
         using void_pointer = typename std::allocator_traits<Allocator>::void_pointer;
         using pointer = typename std::allocator_traits<Allocator>::pointer;
-        using size_func_t = std::pair<size_t, size_t>();
+	using size_descr_t = std::pair<size_t,size_t>;
+        using size_func_t = size_descr_t();
         using policy_t = CloningPolicy;
         poly_vector_elem_ptr() : ptr{}, sf{} {}
 
         template<typename T, typename = std::enable_if_t< std::is_base_of< IF, std::decay_t<T> >::value > >
         explicit poly_vector_elem_ptr(T&& t, void_pointer s = nullptr, pointer i = nullptr) noexcept :
-            CloningPolicy(std::forward<T>(t)), ptr{ s, i }, sf{ &poly_vector_elem_ptr::size_func<std::decay_t<T>>}
+            CloningPolicy(std::forward<T>(t)), ptr{ s, i }, sf{ poly_vector_elem_ptr::size_func<std::decay_t<T>>() }
         {}
         poly_vector_elem_ptr(const poly_vector_elem_ptr& other) noexcept :
             CloningPolicy(other.policy()), ptr{ other.ptr }, sf{ other.sf }
@@ -431,26 +432,26 @@ namespace estd
         }
         size_t size()const noexcept
         {
-            return sf().first;
+            return sf.first;
         }
         size_t align() const noexcept
         {
-            return sf().second;
+            return sf.second;
         }
         template<typename T>
-        static std::pair<size_t, size_t> size_func()
+        static size_descr_t size_func()
         {
-            return std::make_pair(sizeof(T), alignof(T));
+            return {sizeof(T), alignof(T)};
         }
         ~poly_vector_elem_ptr()
         {
             ptr.first = ptr.second = nullptr;
-            sf = nullptr;
+            sf = size_descr_t{0,0};
         }
 
         std::pair<void_pointer, pointer> ptr;
     private:
-        size_func_t* sf;
+        size_descr_t sf;
     };
 
     template<class A, class C>
