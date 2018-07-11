@@ -51,9 +51,30 @@ if(UNIX)
             CMAKE_EXE_LINKER_FLAGS_SANITIZE
             CMAKE_SHARED_LINKER_FLAGS_SANITIZE)
 
+    SET( CMAKE_CXX_FLAGS_UBSAN "${CMAKE_CXX_FLAGS_RELEASE} -g -fno-omit-frame-pointer -fsanitize=undefined"
+            CACHE STRING "Flags used by the C++ compiler during ubsan builds."
+            FORCE )
+    SET( CMAKE_C_FLAGS_UBSAN "${CMAKE_C_FLAGS_RELEASE} -g -fno-omit-frame-pointer -fsanitize=undefined" CACHE STRING
+            "Flags used by the C compiler during ubsan builds."
+            FORCE )
+    SET( CMAKE_EXE_LINKER_FLAGS_UBSAN
+            "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -fsanitize=undefined" CACHE STRING
+            "Flags used for linking binaries during ubsan builds."
+            FORCE )
+    SET( CMAKE_SHARED_LINKER_FLAGS_UBSAN
+            "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -fsanitize=undefined" CACHE STRING
+            "Flags used by the shared libraries linker during ubsan builds."
+            FORCE )
+    MARK_AS_ADVANCED(
+            CMAKE_CXX_FLAGS_UBSAN
+            CMAKE_C_FLAGS_UBSAN
+            CMAKE_EXE_LINKER_FLAGS_UBSAN
+            CMAKE_SHARED_LINKER_FLAGS_UBSAN)
+
+
     # Update the documentation string of CMAKE_BUILD_TYPE for GUIs
     SET( CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING
-            "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel Coverage Sanitize."
+            "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel Coverage Sanitize UBSAN."
             FORCE )
 
 endif(UNIX)
