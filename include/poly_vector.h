@@ -741,12 +741,7 @@ private:
     ////////////////////////
     static void_pointer       next_aligned_storage(void_pointer p, size_t align) noexcept;
     static size_t             storage_size(const_void_pointer b, const_void_pointer e) noexcept;
-    static size_t             max_alignment(elem_ptr_const_pointer begin, elem_ptr_const_pointer end) noexcept;
-    static size_t             max_alignment(elem_ptr_const_pointer begin1, elem_ptr_const_pointer end1,
-                    elem_ptr_const_pointer begin2, elem_ptr_const_pointer end2) noexcept;
     static size_t             occupied_storage_size(elem_ptr_const_pointer p) noexcept;
-    size_t                    max_alignment() const noexcept;
-    size_t                    max_alignment(size_t new_alignment) const noexcept;
     std::pair<size_t, size_t> calculate_storage_size(
         size_t new_size, size_t new_elem_size, size_t new_elem_alignment) const noexcept;
     size_type occupied_storage(elem_ptr_const_pointer p) const noexcept;
@@ -1414,37 +1409,10 @@ inline auto poly_vector<IF, Allocator, CloningPolicy>::free_storage() const noex
     return static_cast<pointer>(prev_elem->ptr.first) + prev_elem->size();
 }
 
-template <class I, class A, class C> inline size_t poly_vector<I, A, C>::max_alignment() const noexcept
-{
-    return max_alignment(begin_elem(), end_elem());
-}
-
-template <class I, class A, class C> size_t poly_vector<I, A, C>::max_alignment(size_t new_alignment) const noexcept
-{
-    return std::max(new_alignment, max_alignment());
-}
-
 template <class I, class A, class C> inline void poly_vector<I, A, C>::init_ptrs(size_t cap) noexcept
 {
     _free_elem     = static_cast<elem_ptr_pointer>(base().storage());
     _begin_storage = begin_elem() + cap;
-}
-
-template <class I, class A, class C>
-inline size_t poly_vector<I, A, C>::max_alignment(elem_ptr_const_pointer begin, elem_ptr_const_pointer end) noexcept
-{
-    if (begin != end) {
-        return std::max_element(begin, end, [](const auto& lhs, const auto& rhs) { return lhs.align() < rhs.align(); })
-            ->align();
-    } else
-        return alignof(std::max_align_t);
-}
-
-template <class I, class A, class C>
-inline size_t poly_vector<I, A, C>::max_alignment(elem_ptr_const_pointer begin1, elem_ptr_const_pointer end1,
-    elem_ptr_const_pointer begin2, elem_ptr_const_pointer end2) noexcept
-{
-    return std::max(max_alignment(begin1, end1), max_alignment(begin2, end2));
 }
 
 template <class I, class A, class C>
@@ -1455,12 +1423,12 @@ inline size_t poly_vector<I, A, C>::occupied_storage_size(elem_ptr_const_pointer
 
 template <class I, class A, class C>
 inline std::pair<size_t, size_t> poly_vector<I, A, C>::calculate_storage_size(
-    size_t new_size, size_t new_elem_size, size_t new_elem_alignment) const noexcept
+    size_t new_size, size_t new_elem_size, size_t new_alignment) const noexcept
 {
-    auto max_alignment            = this->max_alignment(new_elem_alignment);
-    auto initial_alignment_buffer = max_alignment;
-    auto new_object_size          = ((new_elem_size + max_alignment - 1) / max_alignment) * max_alignment;
-    auto buffer_size              = std::accumulate(
+    const auto max_alignment            = std::max(new_alignment, max_align());
+    const auto initial_alignment_buffer = max_alignment;
+    const auto new_object_size          = ((new_elem_size + max_alignment - 1) / max_alignment) * max_alignment;
+    const auto buffer_size              = std::accumulate(
         begin_elem(), end_elem(), initial_alignment_buffer, [max_alignment](size_t val, const auto& p) {
             return val + ((p.size() + max_alignment - 1) / max_alignment) * max_alignment;
         });
