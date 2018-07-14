@@ -88,7 +88,63 @@ TEST_CASE(
 
     REQUIRE(std::addressof(second) == std::addressof(v[1]));
 
-    REQUIRE(2 == v.size());
+    v.reserve(128);
+
+    auto& third = v.emplace_back<Impl1>();
+
+    REQUIRE(std::addressof(third) == std::addressof(v[2]));
+
+    REQUIRE(3 == v.size());
+}
+
+TEST_CASE(
+    "iterator operations", "[poly_vector_basic_tests]")
+{
+    estd::poly_vector<Interface> v;
+    using iterator = estd::poly_vector<Interface>::iterator;
+    v.push_back(Impl1(3.14));
+    v.push_back(Impl2());
+    iterator a = v.begin();
+    iterator b(a);
+    SECTION("assignment operator")
+    b = a;
+	a == b
+    a != b
+    *a
+a->m
+*a = t
+++a
+a++
+*a++
+--a
+a--
+*a--
+a + n
+n + a
+a - n
+a - b
+a < b
+a > b
+a <= b
+a >= b
+a += n
+a -= n
+a[n]
+swap(a,b)
+    SECTION("inequality"){
+        REQUIRE(v.begin() != v.end());
+    }
+    SECTION("distance"){
+        const auto diff = std::distance(v.begin(),v.end());
+        REQUIRE(diff == v.size());
+    }
+
+}
+
+
+TEST_CASE("if reserving too much lenght error is thrown","[poly_vector_basic_tests]"){
+    estd::poly_vector<Interface> v;
+    REQUIRE_THROWS_AS(v.reserve(std::allocator<uint8_t>().max_size(),4*sizeof(void*)),std::length_error);    
 }
 
 TEST_CASE("is_not_copyable_with_no_cloning_policy", "[poly_vector_basic_tests]")
