@@ -61,7 +61,7 @@ install(FILES "${PROJECT_BINARY_DIR}/PolyVectorConfigVersion.cmake"
         DESTINATION ${POLY_VECTOR_CMAKE_LIB_DIR})
 		
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${POLY_VECTOR_CMAKE_INSTALL_INCLUDE_DIR})
-install(FILES  visualizer/poly_vector.natvis DESTINATION share/poly_vector)
+install(FILES  visualizer/poly_vector.natvis DESTINATION ${POLY_VECTOR_CMAKE_INSTALL_SHARE_DIR})
 
 
 get_filename_component(POLY_VECTOR_NATVIS_FILE visualizer/poly_vector.natvis ABSOLUTE)
