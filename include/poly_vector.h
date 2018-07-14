@@ -1323,9 +1323,7 @@ inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase(T&& obj)
     v.base().allocate(sizes.first);
     v.init_ptrs(new_capacity);
     v._align_max = sizes.second;
-    v.set_ptrs(poly_uninitialized_copy(
-        v.base(), v.begin_elem(), begin_elem(), end_elem(), std::next(begin_elem(), new_capacity), v.max_align()));
-
+    push_back_new_elem_w_storage_increase_copy(v, interface_type_noexcept_movable {});
     v.push_back_new_elem(std::forward<T>(obj));
     this->swap(v);
 }
@@ -1334,14 +1332,14 @@ template <class I, class A, class C>
 inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase_copy(poly_vector& v, std::true_type)
 {
     v.set_ptrs(poly_uninitialized_move(
-                   base(), v.begin_elem(), begin_elem(), end_elem(), std::next(begin_elem(), v.capacity())),
-        v.max_align());
+        base(), v.begin_elem(), begin_elem(), end_elem(), std::next(begin_elem(), v.capacity()), v.max_align()));
 }
 
 template <class I, class A, class C>
 inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase_copy(poly_vector& v, std::false_type)
 {
-    v.set_ptrs(poly_uninitialized_copy(v.base(), v.begin_elem(), begin_elem(), _free_elem, end_elem(), v.max_align()));
+    v.set_ptrs(poly_uninitialized_copy(
+        v.base(), v.begin_elem(), begin_elem(), _free_elem, std::next(begin_elem(), v.capacity()), v.max_align()));
 }
 
 template <class I, class A, class C>

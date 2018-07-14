@@ -279,7 +279,7 @@ TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy, e
             REQUIRE(caps == v.capacities());
             REQUIRE(0 == std::memcmp(ref_storage.data(), v.data().first, ref_storage.size()));
         } else {
-            REQUIRE_THROWS_AS(v.push_back(Impl2 {}), std::exception);
+            REQUIRE_NOTHROW(v.push_back(Impl2 {}));
         }
     }
     SECTION("basic_guarantee_when_there_is_an_exception_during_erase_and_last_"
