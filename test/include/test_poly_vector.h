@@ -251,6 +251,12 @@ using CustomCloningPolicy = CustomCloningPolicyT<CustInterface>;
 
 template <typename T> class Allocator : public std::allocator<T> {
     using is_always_equal = std::false_type;
+    typedef T*       pointer;
+    typedef const T* const_pointer;
+    typedef T        value_type;
+    template <class U> struct rebind {
+        typedef Allocator<U> other;
+    };
     using std::allocator<T>::allocator;
 };
 
