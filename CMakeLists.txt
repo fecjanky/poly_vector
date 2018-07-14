@@ -11,11 +11,24 @@ include(catch)
 
 add_library(PolyVector INTERFACE)
 
+set(POLY_VECTOR_CMAKE_LIB_DIR lib/cmake/PolyVector)
+set(POLY_VECTOR_CMAKE_INSTALL_INCLUDE_DIR include/poly_vector)
+set(POLY_VECTOR_CMAKE_INSTALL_SHARE_DIR share/poly_vector)
+
 target_include_directories(PolyVector
   INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${POLY_VECTOR_CMAKE_INSTALL_INCLUDE_DIR}>
 )
+
+if(MSVC)
+target_sources(PolyVector  
+	INTERFACE 
+		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/visualizer/poly_vector.natvis> 
+		$<INSTALL_INTERFACE:${POLY_VECTOR_CMAKE_INSTALL_SHARE_DIR}/poly_vector.natvis>
+)
+endif()
+
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
@@ -33,21 +46,22 @@ install(TARGETS PolyVector
     BUNDLE DESTINATION bin COMPONENT Runtime
 )
 
-install(EXPORT PolyVectorTargets DESTINATION lib/cmake/PolyVector)
+install(EXPORT PolyVectorTargets DESTINATION ${POLY_VECTOR_CMAKE_LIB_DIR})
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
     "${PROJECT_SOURCE_DIR}/cmake/PolyVectorConfig.cmake.in"
     "${PROJECT_BINARY_DIR}/PolyVectorConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/PolyVector
+    INSTALL_DESTINATION ${POLY_VECTOR_CMAKE_LIB_DIR}
 )
 
 
 install(FILES "${PROJECT_BINARY_DIR}/PolyVectorConfigVersion.cmake"
               "${PROJECT_BINARY_DIR}/PolyVectorConfig.cmake"
-        DESTINATION lib/cmake/PolyVector)
+        DESTINATION ${POLY_VECTOR_CMAKE_LIB_DIR})
 		
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${POLY_VECTOR_CMAKE_INSTALL_INCLUDE_DIR})
+install(FILES  visualizer/poly_vector.natvis DESTINATION share/poly_vector)
 
 
 get_filename_component(POLY_VECTOR_NATVIS_FILE visualizer/poly_vector.natvis ABSOLUTE)
