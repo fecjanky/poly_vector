@@ -155,8 +155,9 @@ TEST_CASE(
     v.push_back(Impl2());
     const auto size = v.size();
 
-    SECTION("when erase starts from the beginning"){
-        auto it = v.erase(v.begin(), v.begin() + 2);
+    SECTION("when erase starts from the beginning")
+    {
+        auto it            = v.erase(v.begin(), v.begin() + 2);
         auto expected_size = size - 2;
         REQUIRE(it == v.begin());
         REQUIRE(expected_size == v.size());
@@ -165,19 +166,21 @@ TEST_CASE(
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v[2]));
         REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v[3]));
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v[4]));
-        SECTION("And then the vector is copied"){
-            auto v_copy = v;
+        SECTION("And then the vector is copied")
+        {
+            auto v_copy     = v;
             auto v_copy_cap = v_copy.capacities();
-            auto v_cap = v.capacities();
+            auto v_cap      = v.capacities();
             REQUIRE(v.size() == v_copy.size());
             REQUIRE(v_copy_cap.first == v_cap.first);
             REQUIRE(v_copy_cap.second == v_cap.second);
         }
     }
 
-    SECTION("when erase starts from the middle"){
-        auto it = v.erase(v.begin()+2, v.begin() + 4);
-        auto expected = v.begin() + 2;
+    SECTION("when erase starts from the middle")
+    {
+        auto it            = v.erase(v.begin() + 2, v.begin() + 4);
+        auto expected      = v.begin() + 2;
         auto expected_size = size - 2;
         REQUIRE(it == expected);
         REQUIRE(expected_size == v.size());
@@ -186,22 +189,23 @@ TEST_CASE(
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v[2]));
         REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v[3]));
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v[4]));
-        SECTION("And then the vector is copied"){
-            auto v_copy = v;
+        SECTION("And then the vector is copied")
+        {
+            auto v_copy     = v;
             auto v_copy_cap = v_copy.capacities();
-            auto v_cap = v.capacities();
+            auto v_cap      = v.capacities();
             REQUIRE(v.size() == v_copy.size());
             REQUIRE(v_copy_cap.first == v_cap.first);
             REQUIRE(v_copy_cap.second == v_cap.second);
         }
-
     }
 
-    SECTION("when erase starts from the middle and only one elem is erased"){
-        auto it = v.erase(v.begin()+3, v.begin() + 4);
-        auto expected = v.begin() + 3;
+    SECTION("when erase starts from the middle and only one elem is erased")
+    {
+        auto it            = v.erase(v.begin() + 3, v.begin() + 4);
+        auto expected      = v.begin() + 3;
         auto expected_size = size - 1;
-        int a;
+        int  a;
         REQUIRE(it == expected);
         REQUIRE(expected_size == v.size());
         REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v[0]));
@@ -210,11 +214,12 @@ TEST_CASE(
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v[3]));
         REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v[4]));
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v[5]));
-        
-        SECTION("And then the vector is copied"){
-            auto v_copy = v;
+
+        SECTION("And then the vector is copied")
+        {
+            auto v_copy     = v;
             auto v_copy_cap = v_copy.capacities();
-            auto v_cap = v.capacities();
+            auto v_cap      = v.capacities();
             REQUIRE(v.size() == v_copy.size());
             REQUIRE(v_copy_cap.first == v_cap.first);
             REQUIRE(v_copy_cap.second == v_cap.second);
