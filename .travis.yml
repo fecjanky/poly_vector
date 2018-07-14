@@ -30,6 +30,22 @@ matrix:
         - CXX_USED=clang++-5.0
         - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=Release
 
+    - compiler: clang-debug
+      env:
+        - CC_USED=clang-5.0
+        - CXX_USED=clang++-5.0
+        - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=Debug
+    - compiler: clang-asan
+      env:
+        - CC_USED=clang-5.0
+        - CXX_USED=clang++-5.0
+        - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=SANITIZE
+    - compiler: clang-ubsan
+      env:
+        - CC_USED=clang-5.0
+        - CXX_USED=clang++-5.0
+        - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=UBSAN
+
 before_install:
   - wget --no-check-certificate https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz 
   - tar -xzf cmake-3.10.0-Linux-x86_64.tar.gz 
