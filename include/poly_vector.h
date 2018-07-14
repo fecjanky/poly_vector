@@ -852,7 +852,6 @@ private:
     elem_ptr_pointer begin_elem() noexcept;
     elem_ptr_const_pointer cbegin_elem() const noexcept;
     elem_ptr_pointer       end_elem() noexcept;
-    elem_ptr_pointer       last_elem() noexcept;
     elem_ptr_const_pointer begin_elem() const noexcept;
     elem_ptr_const_pointer end_elem() const noexcept;
     elem_ptr_const_pointer last_elem() const noexcept;
@@ -1532,12 +1531,6 @@ template <class I, class A, class C>
 inline auto poly_vector<I, A, C>::end_elem() noexcept -> elem_ptr_pointer
 {
     return static_cast<elem_ptr_pointer>(_free_elem);
-}
-
-template <class IF, class Allocator, class CloningPolicy>
-inline auto poly_vector<IF, Allocator, CloningPolicy>::last_elem() noexcept -> elem_ptr_pointer
-{
-    return static_cast<elem_ptr_pointer>(_begin_storage);
 }
 
 template <class I, class A, class C>
