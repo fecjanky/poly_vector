@@ -817,7 +817,7 @@ private:
 
     void obtain_storage(my_base&& a, size_t n, size_t max_align, std::false_type) noexcept;
 
-    void init_layout(size_t storage_size, size_t capacity, size_t align_max = default_alignment);
+    void init_layout(size_t storage_size, size_t capacity, size_t align_max = default_alignement);
 
     my_base&               base() noexcept;
     const my_base&         base() const noexcept;
