@@ -34,10 +34,11 @@
 #include <utility>
 
 namespace estd {
+template <typename T> struct type_tag {
+    using type = T;
+};
+
 namespace poly_vector_impl {
-    template <typename T> struct type_tag {
-        using type = T;
-    };
 
     template <typename... Ts> struct OrType;
 
@@ -105,6 +106,7 @@ namespace poly_vector_impl {
         typename is_noexcept_movable<TT, has_noexcept_movable<TT>::value>::type;
 
     template <class T, class IF, class A> struct is_cloning_policy_impl {
+        // TODO(fecjanky): add check for is constructible from type_tag
         using void_ptr = typename std::allocator_traits<A>::void_pointer;
         using pointer  = typename std::allocator_traits<A>::pointer;
 
@@ -384,7 +386,7 @@ struct poly_vector_elem_ptr : private CloningPolicy {
 
     template <typename T, typename = std::enable_if_t<std::is_base_of<IF, std::decay_t<T>>::value>>
     explicit poly_vector_elem_ptr(
-        poly_vector_impl::type_tag<T> t, void_pointer s = nullptr, pointer i = nullptr) noexcept
+        type_tag<T> t, void_pointer s = nullptr, pointer i = nullptr) noexcept
         : CloningPolicy(t)
         , ptr { s, i }
         , sf { poly_vector_elem_ptr::size_func<std::decay_t<T>>() }
@@ -443,7 +445,7 @@ template <class IF, class Allocator = std::allocator<IF>> struct virtual_cloning
     using allocator_type   = Allocator;
 
     virtual_cloning_policy() = default;
-    template <typename T> virtual_cloning_policy(poly_vector_impl::type_tag<T>) {};
+    template <typename T> virtual_cloning_policy(type_tag<T>) {};
     pointer clone(const Allocator& a, pointer obj, void_pointer dest) const
     {
         return obj->clone(a, dest);
@@ -464,7 +466,7 @@ template <class IF, class Allocator = std::allocator<IF>> struct no_cloning_poli
     using pointer          = typename std::allocator_traits<Allocator>::pointer;
     using allocator_type   = Allocator;
     no_cloning_policy()    = default;
-    template <typename T> no_cloning_policy(poly_vector_impl::type_tag<T>) {};
+    template <typename T> no_cloning_policy(type_tag<T>) {};
     pointer clone(const Allocator& a, pointer obj, void_pointer dest) const
     {
         throw no_cloning_exception {};
@@ -489,7 +491,7 @@ struct delegate_cloning_policy {
 
     template <typename T,
         typename = std::enable_if_t<!std::is_same<delegate_cloning_policy, std::decay_t<T>>::value>>
-    explicit delegate_cloning_policy(poly_vector_impl::type_tag<T>) noexcept
+    explicit delegate_cloning_policy(type_tag<T>) noexcept
         : cf(&delegate_cloning_policy::clone_func<std::decay_t<T>>)
     {
         // this ensures, that if policy requires noexcept move construction that
@@ -791,7 +793,7 @@ public:
     allocator_type get_allocator() const noexcept;
 
 private:
-    template <typename T> using type_tag = poly_vector_impl::type_tag<T>;
+    template <typename T> using type_tag = type_tag<T>;
 
     using elem_ptr
         = poly_vector_elem_ptr<typename allocator_traits::template rebind_alloc<interface_type>,
@@ -1049,6 +1051,12 @@ template <class IF, class Allocator, class CloningPolicy>
 inline auto poly_vector<IF, Allocator, CloningPolicy>::cbegin() const noexcept -> const_iterator
 {
     return begin();
+}
+
+template <class IF, class Allocator, class CloningPolicy>
+inline auto poly_vector<IF, Allocator, CloningPolicy>::cend() const noexcept -> const_iterator
+{
+    return end();
 }
 
 template <class I, class A, class C> inline size_t poly_vector<I, A, C>::size() const noexcept

@@ -328,6 +328,28 @@ TEST_CASE("erase_from_begin_to_end_clears_the_vector", "[poly_vector_basic_tests
     REQUIRE(0 == v.size());
 }
 
+TEST_CASE("construction with custom cloning policy")
+{
+    using namespace custom;
+    estd::poly_vector<CustInterface, std::allocator<CustInterface>, CustomCloningPolicy> v;
+    v.emplace_back<CustImpl>();
+    v.emplace_back<CustImpl>();
+    v.emplace_back<CustOtherImpl>();
+    v.emplace_back<CustImpl>();
+    v.emplace_back<CustImpl>();
+
+    const auto     func     = [](int a, const CustInterface& obj) { return obj.doSomething() + a; };
+    const auto     res      = std::accumulate(v.cbegin(), v.cend(), 0, func);
+    constexpr auto expected = 4 * 42 + 43;
+
+    REQUIRE(res == expected);
+
+    auto       v_copy   = v;
+    const auto copy_res = std::accumulate(v_copy.cbegin(), v_copy.cend(), 0, func);
+
+    REQUIRE(copy_res == expected);
+}
+
 TEST_CASE(
     "erase_can_be_called_with_any_valid_iterator_to_a_vector_elem", "[poly_vector_basic_tests]")
 {

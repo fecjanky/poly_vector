@@ -180,3 +180,73 @@ private:
 };
 
 using Impl2 = Impl2T<estd::virtual_cloning_policy<Interface>>;
+
+namespace custom {
+struct CustInterface;
+class CustOtherImpl;
+class CustImpl;
+struct IVisitor {
+    virtual void visit(const CustImpl&) const      = 0;
+    virtual void visit(const CustOtherImpl&) const = 0;
+    virtual ~IVisitor()                            = default;
+};
+
+struct CustInterface {
+public:
+    virtual void accept(const IVisitor&) const = 0;
+    virtual int  doSomething() const           = 0;
+    virtual ~CustInterface()                   = default;
+};
+
+class CustImpl : public CustInterface {
+public:
+    int  doSomething() const override { return 42; }
+    void accept(const IVisitor& v) const override { v.visit(*this); }
+};
+
+class CustOtherImpl : public CustInterface {
+public:
+    int  doSomething() const override { return 43; }
+    void accept(const IVisitor& v) const override { v.visit(*this); }
+};
+
+class CloneVisitor : public IVisitor {
+public:
+    CloneVisitor(void* dst_)
+        : dst(dst_)
+    {
+    }
+    void visit(const CustImpl& impl) const override { ptr = new (dst) CustImpl(impl); }
+    void visit(const CustOtherImpl& impl) const override { ptr = new (dst) CustOtherImpl(impl); }
+
+    ~CloneVisitor()
+    {
+        if (ptr)
+            ptr->~CustInterface();
+    }
+
+    CustInterface* release() const { return std::exchange(ptr, nullptr); }
+
+private:
+    mutable void*          dst;
+    mutable CustInterface* ptr = nullptr;
+};
+
+template <class IF, class Allocator = std::allocator<IF>> struct CustomCloningPolicyT {
+    using noexcept_movable = std::false_type;
+    using void_pointer     = typename std::allocator_traits<Allocator>::void_pointer;
+    using pointer          = typename std::allocator_traits<Allocator>::pointer;
+    using allocator_type   = Allocator;
+    CustomCloningPolicyT() = default;
+    template <typename T> CustomCloningPolicyT(estd::type_tag<T>) {};
+    pointer clone(const Allocator& a, pointer obj, void_pointer dest) const
+    {
+        CloneVisitor v(dest);
+        obj->accept(v);
+        return v.release();
+    }
+};
+
+using CustomCloningPolicy = CustomCloningPolicyT<CustInterface>;
+
+}
