@@ -2,5 +2,8 @@
 BasedOnStyle: WebKit
 AlignConsecutiveAssignments: 'true'
 AlignConsecutiveDeclarations: 'true'
-
+ColumnLimit: 120
+BinPackArguments: 'true'
+BinPackParameters: 'true'
+BreakBeforeTernaryOperators: 'true'
 ...
