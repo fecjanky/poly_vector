@@ -477,6 +477,43 @@ TEST_CASE("get_allocator fetches the allocator used by the container", "[poly_ve
     REQUIRE(v.get_allocator() == estd::poly_vector<Interface>::allocator_type());
 }
 
+TEST_CASE("basic operations when using custom allocator", "[poly_vector_basic_tests]")
+{
+    using poly_vector = estd::poly_vector<Interface, custom::Allocator<Interface>>;
+    poly_vector v;
+    v.push_back(Impl1(3.14));
+    v.push_back(Impl2());
+    v.push_back(Impl1(3.14));
+    v.push_back(Impl2());
+    const auto old_size = v.size();
+
+    SECTION("when vector is move constructed")
+    {
+        poly_vector v_m = std::move(v);
+        REQUIRE(v_m.size() == old_size);
+        REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v_m[0]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[1]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v_m[2]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[3]));
+    }
+
+    SECTION("when vector is move assigned")
+    {
+        poly_vector v_m;
+        v_m.push_back(Impl1(3.14));
+        v_m.push_back(Impl2());
+        v_m.push_back(Impl1(3.14));
+
+        v_m = std::move(v);
+
+        REQUIRE(v_m.size() == old_size);
+        REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v_m[0]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[1]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v_m[2]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[3]));
+    }
+}
+
 TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy,
     estd::virtual_cloning_policy<Interface>, estd::delegate_cloning_policy<Interface>)
 {

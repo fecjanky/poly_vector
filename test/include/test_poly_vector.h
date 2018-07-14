@@ -249,4 +249,9 @@ template <class IF, class Allocator = std::allocator<IF>> struct CustomCloningPo
 
 using CustomCloningPolicy = CustomCloningPolicyT<CustInterface>;
 
+template <typename T> class Allocator : public std::allocator<T> {
+    using is_always_equal = std::false_type;
+    using std::allocator<T>::allocator;
+};
+
 }
