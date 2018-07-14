@@ -67,6 +67,10 @@ TEST_CASE("reserve_does_not_increase_capacity_when_size_is_less_than_current_"
     const auto capacities = v.capacities();
     v.reserve(n / 2, avg_s);
     REQUIRE(capacities == v.capacities());
+    const auto old_cap = v.capacities();
+    v.reserve(v.capacities());
+    REQUIRE(old_cap.first == v.capacities().first);
+    REQUIRE(old_cap.second == v.capacities().second);
 }
 
 TEST_CASE(
