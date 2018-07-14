@@ -42,6 +42,7 @@ matrix:
         - CC_USED=clang-6.0
         - CXX_USED=clang++-6.0
         - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=SANITIZE
+        - LSAN_OPTIONS=verbosity=1:log_threads=1
     - compiler: clang-ubsan
       env:
         - CC_USED=clang-6.0
