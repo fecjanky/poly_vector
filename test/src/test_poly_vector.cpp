@@ -45,12 +45,15 @@ TEST_CASE(
 TEST_CASE("reserve_reallocates_capacity_when_max_align_changes", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v;
+    const auto&                  cv    = v;
     constexpr size_t             n     = 16;
     constexpr size_t             avg_s = 64;
     v.reserve(n, avg_s);
-    auto old_data = v.data();
+    auto old_data   = v.data();
+    auto c_old_data = cv.data();
     v.reserve(n, avg_s, 32);
     REQUIRE(old_data != v.data());
+    REQUIRE(c_old_data != cv.data());
 }
 
 TEST_CASE("reserve_does_not_increase_capacity_when_size_is_less_than_current_"
@@ -73,6 +76,20 @@ TEST_CASE(
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     REQUIRE(2 == v.size());
+}
+
+TEST_CASE("range based for can be used with the vector", "[poly_vector_basic_tests]")
+{
+    estd::poly_vector<Interface> v;
+    v.push_back(Impl1(3.14));
+    v.push_back(Impl2());
+    const auto& cv = v;
+    for (auto& obj : v) {
+        REQUIRE((obj.getId() == v[0].getId() || obj.getId() == v[1].getId()));
+    }
+    for (auto& obj : cv) {
+        REQUIRE((obj.getId() == v[0].getId() || obj.getId() == v[1].getId()));
+    }
 }
 
 TEST_CASE(
@@ -256,24 +273,18 @@ TEST_CASE("objects_are_allocated_with_proper_alignment", "[poly_vector_basic_tes
     v.reserve(2, std::max(sizeof(Impl1), sizeof(Impl2)), std::max(alignof(Impl1), alignof(Impl2)));
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
-    REQUIRE(is_aligned_properly(static_cast<Impl1&>(v[0])));
-    REQUIRE(is_aligned_properly(static_cast<Impl2&>(v[1])));
+    REQUIRE(is_aligned_properly(dynamic_cast<Impl1&>(v[0])));
+    REQUIRE(is_aligned_properly(dynamic_cast<Impl2&>(v[1])));
 }
 
 TEST_CASE("no_cloning_policy_gives_e_what", "[poly_vector_basic_tests]")
 {
-    bool throwed = false;
     estd::poly_vector<Interface, std::allocator<Interface>, estd::no_cloning_policy<Interface>>
         v {};
-    try {
-        v.reserve(1, sizeof(Impl1));
-        v.push_back(Impl1(3.14));
-        v.push_back(Impl1(3.14));
-    } catch (const estd::no_cloning_exception& e) {
-        std::string emsg = e.what();
-        throwed          = emsg.find("no_cloning_policy") != std::string::npos;
-    }
-    REQUIRE(throwed);
+    v.reserve(1, sizeof(Impl1));
+    v.push_back(Impl1(3.14));
+
+    REQUIRE_THROWS_AS(v.push_back(Impl1(3.14)), estd::no_cloning_exception);
 }
 
 TEST_CASE("erase_from_begin_to_end_clears_the_vector", "[poly_vector_basic_tests]")
@@ -402,6 +413,7 @@ TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy,
     Impl1                 obj1;
     Impl2T<CloningPolicy> obj2;
     vector                v;
+    const auto&           cv = v;
     v.push_back(obj1);
     v.push_back(obj2);
 
@@ -409,11 +421,13 @@ TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy,
     {
         Interface& obj = obj2;
         REQUIRE(obj == v.back());
+        REQUIRE(obj == cv.back());
     }
     SECTION("front accesses the first element")
     {
         Interface& obj = obj1;
         REQUIRE(obj == v.front());
+        REQUIRE(obj == cv.front());
     }
     SECTION("pop_back_removes_the_last_element")
     {
@@ -447,12 +461,17 @@ TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy,
     {
         REQUIRE(static_cast<Interface&>(obj1) == v[0]);
         REQUIRE(static_cast<Interface&>(obj2) == v[1]);
+        REQUIRE(static_cast<const Interface&>(obj1) == cv[0]);
+        REQUIRE(static_cast<const Interface&>(obj2) == cv[1]);
     }
     SECTION("at_operator_throws_out_of_range_error_on_overindexing")
     {
         REQUIRE_NOTHROW(v.at(1));
+        REQUIRE_NOTHROW(cv.at(1));
         REQUIRE(static_cast<Interface&>(obj2) == v.at(1));
+        REQUIRE(static_cast<const Interface&>(obj2) == cv.at(1));
         REQUIRE_THROWS_AS(v.at(2), std::out_of_range);
+        REQUIRE_THROWS_AS(cv.at(2), std::out_of_range);
     }
     SECTION("swap_swaps_the_contents_of_two_vectors")
     {
@@ -479,18 +498,37 @@ TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy,
         REQUIRE(static_cast<Interface&>(obj1) == v2[0]);
         REQUIRE(static_cast<Interface&>(obj2) == v2[1]);
     }
+    SECTION("copy_assignment_copies_contained_elems when the destination is not empty")
+    {
+        vector v2;
+        v2.push_back(Impl1(6.28));
+        v2.push_back(Impl2());
+
+        v2 = v;
+
+        REQUIRE(static_cast<Interface&>(obj1) == v2[0]);
+        REQUIRE(static_cast<Interface&>(obj2) == v2[1]);
+    }
+
     SECTION("move_assignment_moves_contained_elems")
     {
         vector v2;
-        auto   size       = v2.sizes();
-        auto   capacities = v2.capacities();
 
         v2 = std::move(v);
 
         REQUIRE(static_cast<Interface&>(obj1) == v2[0]);
         REQUIRE(static_cast<Interface&>(obj2) == v2[1]);
-        REQUIRE(size == v.sizes());
-        REQUIRE(capacities == v.capacities());
+    }
+    SECTION("move_assignment_moves_contained_elems when destination is not empty")
+    {
+        vector v2;
+        v2.push_back(Impl1(6.28));
+        v2.push_back(Impl2());
+
+        v2 = std::move(v);
+
+        REQUIRE(static_cast<Interface&>(obj1) == v2[0]);
+        REQUIRE(static_cast<Interface&>(obj2) == v2[1]);
     }
 
     SECTION("strog_guarantee_when_there_is_an_exception_during_push_back_w_"
