@@ -97,54 +97,142 @@ TEST_CASE(
     REQUIRE(3 == v.size());
 }
 
-TEST_CASE(
-    "iterator operations", "[poly_vector_basic_tests]")
+TEST_CASE("iterator operations", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v;
     using iterator = estd::poly_vector<Interface>::iterator;
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
+    const auto first_id  = v[0].getId();
+    const auto second_id = v[1].getId();
+
     iterator a = v.begin();
     iterator b(a);
+
+    SECTION("equality test") { REQUIRE(a == b); }
     SECTION("assignment operator")
-    b = a;
-	a == b
-    a != b
-    *a
-a->m
-*a = t
-++a
-a++
-*a++
---a
-a--
-*a--
-a + n
-n + a
-a - n
-a - b
-a < b
-a > b
-a <= b
-a >= b
-a += n
-a -= n
-a[n]
-swap(a,b)
-    SECTION("inequality"){
-        REQUIRE(v.begin() != v.end());
+    {
+        b = v.end();
+        REQUIRE(!(a == b));
     }
-    SECTION("distance"){
-        const auto diff = std::distance(v.begin(),v.end());
-        REQUIRE(diff == v.size());
+    SECTION("inequality operator")
+    {
+        b = v.end();
+        REQUIRE(a != b);
     }
 
+    SECTION("dereferene operator")
+    {
+        auto& deref = *a;
+        REQUIRE(deref.getId() == first_id);
+    }
+    SECTION("arrow operator") { REQUIRE(a->getId() == first_id); }
+    SECTION("pre increment")
+    {
+        const auto origi = a;
+        ++a;
+        REQUIRE(a != origi);
+        REQUIRE(a->getId() == second_id);
+    }
+    SECTION("pre increment compares equal")
+    {
+        ++a;
+        ++b;
+        REQUIRE(a == b);
+    }
+    SECTION("post increment still dereferencable")
+    {
+        const auto& d = *a++;
+        REQUIRE(d.getId() == first_id);
+        REQUIRE(a->getId() == second_id);
+    }
+
+    SECTION("post increment")
+    {
+        const auto origi = a++;
+        REQUIRE(a != origi);
+        REQUIRE(a->getId() == second_id);
+    }
+
+    SECTION("post increment compares equal")
+    {
+        a++;
+        b++;
+        REQUIRE(a == b);
+    }
+    SECTION("pre decrement")
+    {
+        a = v.end();
+        --a;
+        REQUIRE(a != v.end());
+    }
+    SECTION("post decrement")
+    {
+        a = v.end();
+        b = a--;
+        REQUIRE(a != v.end());
+        REQUIRE(b == v.end());
+        REQUIRE(a != b);
+    }
+    SECTION("post decrement still dereferencable")
+    {
+        ++a;
+        auto& deref = *a--;
+        REQUIRE(deref.getId() == second_id);
+        REQUIRE(a->getId() == first_id);
+    }
+    SECTION("artihmetic operator with integers")
+    {
+        const auto n = 1;
+        auto       c = a + n;
+        auto       d = n + a;
+        auto       e = c - n;
+        auto       f = c - a;
+        REQUIRE(c == d);
+        REQUIRE(e == a);
+        REQUIRE(f == n);
+    }
+    SECTION("relational operators")
+    {
+        REQUIRE(a <= b);
+        REQUIRE(b >= a);
+        ++b;
+        REQUIRE(a < b);
+        REQUIRE(b > a);
+    }
+    SECTION("compund assignment plus")
+    {
+        const auto n = 1;
+        a += n;
+        const auto diff = a - b;
+        REQUIRE(diff == n);
+    }
+    SECTION("compund assignment minus")
+    {
+        const auto n = 1;
+        a            = v.end();
+        a -= n;
+        const auto diff = v.end() - a;
+        REQUIRE(diff == n);
+    }
+    SECTION("offset derefernce operator")
+    {
+        REQUIRE(a[1].getId() == second_id);
+        const auto b = a;
+        REQUIRE(b[0].getId() == first_id);
+    }
+    SECTION("Lvalues are swappable")
+    {
+        swap(a, b);
+        REQUIRE(a == b);
+    }
 }
 
-
-TEST_CASE("if reserving too much lenght error is thrown","[poly_vector_basic_tests]"){
+TEST_CASE("if reserving too much lenght error is thrown", "[poly_vector_basic_tests]")
+{
     estd::poly_vector<Interface> v;
-    REQUIRE_THROWS_AS(v.reserve(std::allocator<uint8_t>().max_size(),4*sizeof(void*)),std::length_error);    
+    REQUIRE_THROWS_AS(
+        v.reserve(std::allocator<uint8_t>().max_size(), 4 * sizeof(void*)), std::length_error);
 }
 
 TEST_CASE("is_not_copyable_with_no_cloning_policy", "[poly_vector_basic_tests]")
@@ -261,7 +349,6 @@ TEST_CASE(
         auto it            = v.erase(v.begin() + 3, v.begin() + 4);
         auto expected      = v.begin() + 3;
         auto expected_size = size - 1;
-        int  a;
         REQUIRE(it == expected);
         REQUIRE(expected_size == v.size());
         REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v[0]));

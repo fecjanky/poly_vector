@@ -622,8 +622,8 @@ public:
         return *this;
     }
     difference_type operator-(poly_vector_iterator rhs) const { return curr - rhs.curr; }
-    reference       operator[](difference_type n) { return *(curr[n]->ptr.second); }
-    const_reference operator[](difference_type n) const { return *(curr[n]->ptr.second); }
+    reference       operator[](difference_type n) { return *(curr[n].ptr.second); }
+    const_reference operator[](difference_type n) const { return *(curr[n].ptr.second); }
     bool operator==(const poly_vector_iterator& rhs) const noexcept { return curr == rhs.curr; }
     bool operator!=(const poly_vector_iterator& rhs) const noexcept { return curr != rhs.curr; }
     bool operator<(const poly_vector_iterator& rhs) const noexcept { return curr < rhs.curr; }
