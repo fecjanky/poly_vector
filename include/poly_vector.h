@@ -677,8 +677,7 @@ public:
     ///////////////////////////////////////////////
     using allocator_type =
         typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
-    using interface_allocator_type =
-        typename std::allocator_traits<Allocator>::template rebind_alloc<IF>;
+    using interface_allocator_type  = Allocator;
     using my_base                   = poly_vector_impl::allocator_base<allocator_type>;
     using interface_type            = std::decay_t<IF>;
     using interface_pointer         = typename interface_allocator_type ::pointer;
@@ -691,9 +690,10 @@ public:
     using void_pointer              = typename my_base::void_pointer;
     using const_void_pointer        = typename my_base::const_void_pointer;
     using size_type                 = std::size_t;
-    using iterator = poly_vector_iterator<interface_type, interface_allocator_type, CloningPolicy>;
+    using cloning_policy            = CloningPolicy;
+    using iterator = poly_vector_iterator<interface_type, interface_allocator_type, cloning_policy>;
     using const_iterator
-        = poly_vector_iterator<const interface_type, interface_allocator_type, CloningPolicy>;
+        = poly_vector_iterator<const interface_type, interface_allocator_type, cloning_policy>;
     using reverse_iterator                = std::reverse_iterator<iterator>;
     using const_reverse_iterator          = std::reverse_iterator<const_iterator>;
     using move_is_noexcept_t              = std::is_nothrow_move_assignable<my_base>;
@@ -795,9 +795,7 @@ public:
 private:
     template <typename T> using type_tag = type_tag<T>;
 
-    using elem_ptr
-        = poly_vector_elem_ptr<typename allocator_traits::template rebind_alloc<interface_type>,
-            CloningPolicy>;
+    using elem_ptr         = poly_vector_elem_ptr<interface_allocator_type, cloning_policy>;
     using elem_ptr_pointer = typename allocator_traits::template rebind_traits<elem_ptr>::pointer;
     using elem_ptr_const_pointer =
         typename allocator_traits::template rebind_traits<elem_ptr>::const_pointer;
