@@ -254,9 +254,6 @@ template <typename T> struct Allocator : public std::allocator<T> {
     typedef T*       pointer;
     typedef const T* const_pointer;
     typedef T        value_type;
-    template <class U> struct rebind {
-        typedef Allocator<U> other;
-    };
     using std::allocator<T>::allocator;
 };
 
