@@ -15,7 +15,7 @@ endif (MSVC)
 
 add_executable(poly_vector_test  ${SRC})
 
-target_link_libraries(poly_vector_test poly_vector_lib Catch_lib)
+target_link_libraries(poly_vector_test PolyVector Catch_lib)
 set_target_properties(poly_vector_test PROPERTIES LINKER_LANGUAGE CXX)
 set_property(TARGET poly_vector_test PROPERTY CXX_STANDARD 14)
 
