@@ -4,11 +4,11 @@ addons:
   apt:
     sources:
         - ubuntu-toolchain-r-test
-        - llvm-toolchain-trusty-5.0
+        - llvm-toolchain-trusty-6.0
     packages:
         - g++-7
         - gcc-7
-        - clang-5.0
+        - clang-6.0
 
 matrix:
   include:
@@ -26,24 +26,24 @@ matrix:
 
     - compiler: clang
       env:
-        - CC_USED=clang-5.0
-        - CXX_USED=clang++-5.0
+        - CC_USED=clang-6.0
+        - CXX_USED=clang++-6.0
         - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=Release
 
     - compiler: clang-debug
       env:
-        - CC_USED=clang-5.0
-        - CXX_USED=clang++-5.0
+        - CC_USED=clang-6.0
+        - CXX_USED=clang++-6.0
         - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=Debug
     - compiler: clang-asan
       env:
-        - CC_USED=clang-5.0
-        - CXX_USED=clang++-5.0
+        - CC_USED=clang-6.0
+        - CXX_USED=clang++-6.0
         - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=SANITIZE
     - compiler: clang-ubsan
       env:
-        - CC_USED=clang-5.0
-        - CXX_USED=clang++-5.0
+        - CC_USED=clang-6.0
+        - CXX_USED=clang++-6.0
         - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=UBSAN
 
 before_install:
