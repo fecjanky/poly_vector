@@ -5,10 +5,12 @@ addons:
     sources:
         - ubuntu-toolchain-r-test
         - llvm-toolchain-trusty-6.0
+        - george-edison55/cmake-3.x
     packages:
         - g++-7
         - gcc-7
         - clang-6.0
+        - cmake
 
 matrix:
   include:
@@ -45,11 +47,6 @@ matrix:
         - CC_USED=clang-6.0
         - CXX_USED=clang++-6.0
         - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=UBSAN
-
-before_install:
-  - wget --no-check-certificate https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz 
-  - tar -xzf cmake-3.10.0-Linux-x86_64.tar.gz 
-  - export PATH="$(readlink -f cmake-3.10.0-Linux-x86_64/bin/):$PATH"
   
 before_script:
   - git submodule init
