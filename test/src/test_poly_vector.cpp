@@ -74,6 +74,22 @@ TEST_CASE(
     REQUIRE(2 == v.size());
 }
 
+TEST_CASE(
+    "descendants of interface can be emplaced back into the vector", "[poly_vector_basic_tests]")
+{
+    estd::poly_vector<Interface> v;
+
+    auto& first = v.emplace_back<Impl1>(3.14, false);
+
+    REQUIRE(std::addressof(first) == std::addressof(v[0]));
+
+    auto& second = v.emplace_back<Impl2>();
+
+    REQUIRE(std::addressof(second) == std::addressof(v[1]));
+
+    REQUIRE(2 == v.size());
+}
+
 TEST_CASE("is_not_copyable_with_no_cloning_policy", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface, std::allocator<Interface>, estd::no_cloning_policy<Interface>>

@@ -947,6 +947,21 @@ inline auto poly_vector<I, A, C>::push_back(T&& obj)
     }
 }
 
+template <class IF, class Allocator, class CloningPolicy>
+template <typename T, typename... Args>
+inline auto poly_vector<IF, Allocator, CloningPolicy>::emplace_back(Args&&... args)
+    -> std::enable_if_t<std::is_base_of<interface_type, T>::value, interface_reference>
+{
+    constexpr auto s = sizeof(T);
+    constexpr auto a = alignof(T);
+    if (!can_construct_new_elem(s, a)) {
+        push_back_new_elem_w_storage_increase(type_tag<T> {}, std::forward<Args>(args)...);
+    } else {
+        push_back_new_elem(type_tag<T> {}, std::forward<Args>(args)...);
+    }
+    return back();
+}
+
 template <class I, class A, class C> inline void poly_vector<I, A, C>::pop_back() noexcept
 {
     clear_till_end(_free_elem - 1);
