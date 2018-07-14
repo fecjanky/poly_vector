@@ -338,6 +338,7 @@ TEST_CASE("construction with custom cloning policy")
     v.emplace_back<CustImpl>();
     v.emplace_back<CustImpl>();
 
+    const auto     origi_size = v.size();
     const auto     func     = [](int a, const CustInterface& obj) { return obj.doSomething() + a; };
     const auto     res      = std::accumulate(v.cbegin(), v.cend(), 0, func);
     constexpr auto expected = 4 * 42 + 43;
@@ -348,6 +349,14 @@ TEST_CASE("construction with custom cloning policy")
     const auto copy_res = std::accumulate(v_copy.cbegin(), v_copy.cend(), 0, func);
 
     REQUIRE(copy_res == expected);
+
+    v_copy.erase(v_copy.begin() + 1, v_copy.begin() + 3);
+
+    REQUIRE(v_copy.size() == (origi_size - 2));
+
+    const auto rem_res = std::accumulate(v_copy.cbegin(), v_copy.cend(), 0, func);
+
+    REQUIRE(rem_res == (v_copy.size() * 42));
 }
 
 TEST_CASE(
