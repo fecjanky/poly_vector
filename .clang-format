@@ -2,7 +2,7 @@
 BasedOnStyle: WebKit
 AlignConsecutiveAssignments: 'true'
 AlignConsecutiveDeclarations: 'true'
-ColumnLimit: 120
+ColumnLimit: 100
 BinPackArguments: 'true'
 BinPackParameters: 'true'
 BreakBeforeTernaryOperators: 'true'
