@@ -1003,7 +1003,7 @@ inline auto poly_vector<I, A, C>::push_back(T&& obj) -> std::enable_if_t<std::is
     using TT         = std::decay_t<T>;
     constexpr auto s = sizeof(TT);
     constexpr auto a = alignof(TT);
-    if (end_elem() == _begin_storage || !can_construct_new_elem(s, a)) {
+    if (!can_construct_new_elem(s, a)) {
         push_back_new_elem_w_storage_increase(std::forward<T>(obj));
     } else {
         push_back_new_elem(std::forward<T>(obj));
@@ -1508,7 +1508,7 @@ inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase_copy(pol
 template <class I, class A, class C>
 inline bool poly_vector<I, A, C>::can_construct_new_elem(size_t s, size_t align) noexcept
 {
-    if (align > _align_max)
+    if (end_elem() == _begin_storage || align > _align_max)
         return false;
     auto free = static_cast<pointer>(next_aligned_storage(free_storage(), _align_max));
     return free + s <= this->end_storage();
