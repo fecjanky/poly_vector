@@ -38,12 +38,14 @@ matrix:
         - CXX_USED=clang++-6.0
         - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=Debug
     - compiler: clang-asan
+      sudo: true
       env:
         - CC_USED=clang-6.0
         - CXX_USED=clang++-6.0
         - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=SANITIZE
         - LSAN_OPTIONS=verbosity=1:log_threads=1
     - compiler: clang-ubsan
+      sudo: true
       env:
         - CC_USED=clang-6.0
         - CXX_USED=clang++-6.0
