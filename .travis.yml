@@ -5,7 +5,7 @@ addons:
     sources:
         - ubuntu-toolchain-r-test
         - llvm-toolchain-trusty-6.0
-        - george-edison55/cmake-3.x
+        - sourceline: 'ppa:george-edison55/cmake-3.x'
     packages:
         - g++-7
         - gcc-7
