@@ -754,6 +754,8 @@ private:
 
     void obtain_storage(my_base&& a, size_t n, size_t max_align, std::false_type) noexcept;
 
+    void init_layout(size_t storage_size, size_t capacity, size_t align_max = default_alignment);
+
     my_base&               base() noexcept;
     const my_base&         base() const noexcept;
     static poly_copy_descr poly_uninitialized_copy(my_base& a, void_pointer dst, elem_ptr_const_pointer begin,
@@ -769,7 +771,7 @@ private:
     void                   destroy_elem(elem_ptr_pointer p) noexcept;
     std::pair<void_pointer, void_pointer> destroy_range(elem_ptr_pointer first, elem_ptr_pointer last) noexcept;
     iterator                              erase_internal_range(elem_ptr_pointer first, elem_ptr_pointer last);
-    void                                  clear_till_end(elem_ptr_pointer first) noexcept;
+    iterator                              clear_till_end(elem_ptr_pointer first) noexcept;
     void                                  init_ptrs(size_t n) noexcept;
     void                                  set_ptrs(poly_copy_descr p);
     void                                  swap_ptrs(poly_vector&& rhs);
@@ -905,17 +907,11 @@ template <class I, class A, class C>
 inline auto poly_vector<I, A, C>::erase(const_iterator first, const_iterator last) -> iterator
 {
     auto eptr_first = begin_elem() + (first - begin());
-    if (last == end()) {
-        clear_till_end(eptr_first);
-        if (empty())
-            _align_max = default_alignement;
-        return end();
-    } else {
-        auto it = erase_internal_range(eptr_first, begin_elem() + (last - begin()));
-        if (empty())
-            _align_max = default_alignement;
-        return it;
-    }
+    auto ret        = last == end() ? clear_till_end(eptr_first)
+                             : erase_internal_range(eptr_first, begin_elem() + (last - begin()));
+    if (empty())
+        _align_max = default_alignement;
+    return ret;
 }
 
 template <class I, class A, class C> inline auto poly_vector<I, A, C>::begin() noexcept -> iterator
@@ -1131,6 +1127,15 @@ inline void poly_vector<I, A, C>::obtain_storage(my_base&& a, size_t n, size_t m
     _align_max = max_align;
 }
 
+template <class IF, class Allocator, class CloningPolicy>
+inline void poly_vector<IF, Allocator, CloningPolicy>::init_layout(
+    size_t storage_size, size_t capacity, size_t align_max)
+{
+    base().allocate(storage_size);
+    init_ptrs(capacity);
+    _align_max = align_max;
+}
+
 template <class I, class A, class C> inline auto poly_vector<I, A, C>::base() noexcept -> my_base& { return *this; }
 
 template <class I, class A, class C> inline auto poly_vector<I, A, C>::base() const noexcept -> const my_base&
@@ -1281,10 +1286,12 @@ inline auto poly_vector<I, A, C>::erase_internal_range(elem_ptr_pointer first, e
     return iterator(return_iterator);
 }
 
-template <class I, class A, class C> inline void poly_vector<I, A, C>::clear_till_end(elem_ptr_pointer first) noexcept
+template <class I, class A, class C>
+inline auto poly_vector<I, A, C>::clear_till_end(elem_ptr_pointer first) noexcept -> iterator
 {
     destroy_range(first, _free_elem);
     _free_elem = first;
+    return end();
 }
 
 template <class I, class A, class C> inline void poly_vector<I, A, C>::set_ptrs(poly_copy_descr p)
@@ -1309,9 +1316,9 @@ template <class I, class A, class C> template <class T> inline void poly_vector<
 
     assert(can_construct_new_elem(s, a));
     assert(_align_max >= a);
-    auto nas    = next_aligned_storage(_align_max);
-    *_free_elem = elem_ptr(poly_vector_impl::type_tag<TT> {}, nas,
-        base().construct(static_cast<typename traits::pointer>(nas), std::forward<T>(obj)));
+    auto nas     = next_aligned_storage(_align_max);
+    auto obj_ptr = base().construct(static_cast<typename traits::pointer>(nas), std::forward<T>(obj));
+    *_free_elem  = elem_ptr(poly_vector_impl::type_tag<TT> {}, nas, obj_ptr);
     ++_free_elem;
 }
 
@@ -1323,31 +1330,14 @@ inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase(T&& obj)
     constexpr auto s = sizeof(TT);
     constexpr auto a = alignof(TT);
     //////////////////////////////////////////
-    const auto new_capacity = std::max(capacity() * 2, size_t(1));
-    ;
-    const auto  sizes = calculate_storage_size(new_capacity, s, a);
+    const auto  new_capacity = std::max(capacity() * 2, size_t(1));
+    const auto  sizes        = calculate_storage_size(new_capacity, s, a);
     poly_vector v(allocator_traits::select_on_container_copy_construction(base().get_allocator_ref()));
-
-    v.base().allocate(sizes.first);
-    v.init_ptrs(new_capacity);
-    v._align_max = sizes.second;
-    push_back_new_elem_w_storage_increase_copy(v, interface_type_noexcept_movable {});
-    v.push_back_new_elem(std::forward<T>(obj));
-    this->swap(v);
-}
-
-template <class I, class A, class C>
-inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase_copy(poly_vector& v, std::true_type)
-{
-    v.set_ptrs(poly_uninitialized_move(
-        base(), v.begin_elem(), begin_elem(), end_elem(), std::next(begin_elem(), v.capacity()), v.max_align()));
-}
-
-template <class I, class A, class C>
-inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase_copy(poly_vector& v, std::false_type)
-{
+    v.init_layout(sizes.first, new_capacity, sizes.second);
     v.set_ptrs(poly_uninitialized_copy(
         v.base(), v.begin_elem(), begin_elem(), _free_elem, std::next(begin_elem(), v.capacity()), v.max_align()));
+    v.push_back_new_elem(std::forward<T>(obj));
+    this->swap(v);
 }
 
 template <class I, class A, class C>
@@ -1367,7 +1357,7 @@ inline auto poly_vector<I, A, C>::next_aligned_storage(size_t align) const noexc
 
 template <class I, class A, class C> inline size_t poly_vector<I, A, C>::avg_obj_size(size_t align) const noexcept
 {
-    return size()
+    return !empty()
         ? (static_cast<size_t>(storage_size(_begin_storage, next_aligned_storage(align))) + size() - 1) / size()
         : 0;
 }
@@ -1423,7 +1413,7 @@ inline auto poly_vector<IF, Allocator, CloningPolicy>::free_storage() const noex
 
 template <class I, class A, class C> inline void poly_vector<I, A, C>::init_ptrs(size_t cap) noexcept
 {
-    _free_elem     = static_cast<elem_ptr_pointer>(base().storage());
+    _free_elem     = begin_elem();
     _begin_storage = begin_elem() + cap;
 }
 
@@ -1466,27 +1456,26 @@ inline auto poly_vector<I, A, C>::insert(const_iterator position, descendant_typ
     constexpr auto s = sizeof(TT);
     constexpr auto a = alignof(TT);
     //////////////////////////////////////////
-    const auto  sizes = calculate_storage_size(size() + 1, s, a);
-    poly_vector v(allocator_traits::select_on_container_copy_construction(base().get_allocator_ref()));
-
-    v.base().allocate(sizes.first);
-    v.init_ptrs(size() + 1);
-    v._align_max         = sizes.second;
     const auto new_index = std::distance(cbegin(), position);
+    const auto new_size  = size() + 1;
+    const auto sizes     = calculate_storage_size(new_size, s, a);
     auto       from      = std::next(begin_elem(), new_index);
 
+    poly_vector v(allocator_traits::select_on_container_copy_construction(base().get_allocator_ref()));
+    v.init_layout(sizes.first, new_size, sizes.second);
     v.set_ptrs(poly_uninitialized_copy(
-        v.base(), v.begin_elem(), begin_elem(), from, std::next(cbegin_elem(), size() + 1), v.max_align()));
+        v.base(), v.begin_elem(), begin_elem(), from, std::next(cbegin_elem(), new_size), v.max_align()));
     v.push_back(std::forward<descendant_type>(val));
-    // clone remaining elems
-    // TODO: branch on noexcept movable
+
     auto dst_storage = v.free_storage();
     auto dst         = v.end_elem();
+
     for (; from != end_elem(); ++from, ++dst) {
         *dst            = *from;
         dst->ptr.first  = next_aligned_storage(dst_storage, v.max_align());
         dst->ptr.second = from->policy().clone(v.base().get_allocator_ref(), from->ptr.second, dst->ptr.first);
         dst_storage     = static_cast<pointer>(dst->ptr.first) + dst->size();
+        v._free_elem    = dst;
     }
     v._free_elem = dst;
     this->swap(v);

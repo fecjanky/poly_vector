@@ -126,6 +126,7 @@ TEST_CASE("erase_can_be_called_with_any_valid_iterator_to_a_vector_elem", "[poly
     v.push_back(Impl2());
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
+
     auto it = v.erase(v.begin(), v.begin() + 2);
     REQUIRE(it == v.begin());
     REQUIRE(3 == v.size());
@@ -324,7 +325,7 @@ TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy, e
         REQUIRE(id == it->getId());
         REQUIRE(old_size + 1 == v.size());
     }
-    SECTION("insert at the middle begin")
+    SECTION("insert at the middle")
     {
         auto o        = Impl1();
         auto id       = o.getId();
