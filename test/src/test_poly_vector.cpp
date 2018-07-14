@@ -21,7 +21,8 @@ TEST_CASE(
     REQUIRE(0 == v.capacity());
     REQUIRE(0 == v.capacities().first);
     REQUIRE(0 == v.capacities().second);
-    REQUIRE(estd::poly_vector<Interface>::default_alignement == v.max_align());
+    constexpr auto alignment = estd::poly_vector<Interface>::default_alignement;
+    REQUIRE(alignment == v.max_align());
 }
 
 TEST_CASE(
