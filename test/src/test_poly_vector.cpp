@@ -311,8 +311,26 @@ TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy, e
         auto o        = Impl1();
         auto id       = o.getId();
         auto old_size = v.size();
-        v.insert(v.end(), std::move(o));
-        REQUIRE(id == v.back().getId());
+        auto it       = v.insert(v.end(), std::move(o));
+        REQUIRE(id == it->getId());
+        REQUIRE(old_size + 1 == v.size());
+    }
+    SECTION("insert at begin")
+    {
+        auto o        = Impl1();
+        auto id       = o.getId();
+        auto old_size = v.size();
+        auto it       = v.insert(v.begin(), std::move(o));
+        REQUIRE(id == it->getId());
+        REQUIRE(old_size + 1 == v.size());
+    }
+    SECTION("insert at the middle begin")
+    {
+        auto o        = Impl1();
+        auto id       = o.getId();
+        auto old_size = v.size();
+        auto it       = v.insert(std::next(v.begin(), v.size() / 2), std::move(o));
+        REQUIRE(id == it->getId());
         REQUIRE(old_size + 1 == v.size());
     }
 }

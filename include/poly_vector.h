@@ -696,6 +696,8 @@ public:
     reverse_iterator rend() noexcept;
     const_iterator   rbegin() const noexcept;
     const_iterator   rend() const noexcept;
+    const_iterator   cbegin() const noexcept;
+    const_iterator   cend() const noexcept;
     ///////////////////////////////////////////////
     // Capacity
     ///////////////////////////////////////////////
@@ -759,6 +761,8 @@ private:
         elem_ptr_const_pointer free, elem_ptr_const_pointer end, size_t max_align);
     static poly_copy_descr poly_uninitialized_move(my_base& a, void_pointer dst, elem_ptr_const_pointer begin,
         elem_ptr_const_pointer free, elem_ptr_const_pointer end, size_t max_align) noexcept;
+    static poly_copy_descr poly_copy(my_base& a, elem_ptr_pointer dst_begin, elem_ptr_const_pointer begin,
+        elem_ptr_const_pointer end, size_t max_align);
     poly_vector&           copy_assign_impl(const poly_vector& rhs);
     poly_vector&           move_assign_impl(poly_vector&& rhs, std::true_type) noexcept;
     poly_vector&           move_assign_impl(poly_vector&& rhs, std::false_type);
@@ -778,6 +782,7 @@ private:
     void_pointer                          next_aligned_storage(size_t align) const noexcept;
     size_t                                avg_obj_size(size_t align = 1) const noexcept;
     elem_ptr_pointer                      begin_elem() noexcept;
+    elem_ptr_const_pointer                cbegin_elem() const noexcept;
     elem_ptr_pointer                      end_elem() noexcept;
     elem_ptr_pointer                      last_elem() noexcept;
     elem_ptr_const_pointer                begin_elem() const noexcept;
@@ -954,6 +959,12 @@ template <class I, class A, class C> inline auto poly_vector<I, A, C>::rbegin() 
 template <class I, class A, class C> inline auto poly_vector<I, A, C>::rend() const noexcept -> const_iterator
 {
     return const_iterator(--begin());
+}
+
+template <class IF, class Allocator, class CloningPolicy>
+inline auto poly_vector<IF, Allocator, CloningPolicy>::cbegin() const noexcept -> const_iterator
+{
+    return begin();
 }
 
 template <class I, class A, class C> inline size_t poly_vector<I, A, C>::size() const noexcept
@@ -1179,6 +1190,18 @@ inline auto poly_vector<IF, Allocator, CloningPolicy>::poly_uninitialized_move(m
     return std::make_tuple(dst, storage_begin, dst_storage);
 }
 
+template <class IF, class Allocator, class CloningPolicy>
+inline auto poly_vector<IF, Allocator, CloningPolicy>::poly_copy(my_base& a, elem_ptr_pointer dst_begin,
+    elem_ptr_const_pointer begin, elem_ptr_const_pointer end, size_t max_align) -> poly_copy_descr
+{
+    // Invariant: dst has enough storage both control and data to hold the objects and ptrs from range [begin,end)
+    for (auto dst_prev = dst_begin; begin != end; ++begin) {
+        *dst_begin = *begin;
+        dst_begin->p
+    }
+    return poly_copy_descr();
+}
+
 template <class I, class A, class C>
 inline auto poly_vector<I, A, C>::copy_assign_impl(const poly_vector& rhs) -> poly_vector&
 {
@@ -1369,6 +1392,12 @@ template <class I, class A, class C> inline auto poly_vector<I, A, C>::begin_ele
     return static_cast<elem_ptr_pointer>(this->storage());
 }
 
+template <class I, class A, class C>
+inline auto poly_vector<I, A, C>::cbegin_elem() const noexcept -> elem_ptr_const_pointer
+{
+    return begin_elem();
+}
+
 template <class I, class A, class C> inline auto poly_vector<I, A, C>::end_elem() noexcept -> elem_ptr_pointer
 {
     return static_cast<elem_ptr_pointer>(_free_elem);
@@ -1454,7 +1483,35 @@ inline auto poly_vector<I, A, C>::insert(const_iterator position, descendant_typ
         push_back(std::forward<descendant_type>(val));
         return std::prev(end());
     }
-    return iterator();
+    using TT         = std::decay_t<descendant_type>;
+    constexpr auto s = sizeof(TT);
+    constexpr auto a = alignof(TT);
+    //////////////////////////////////////////
+    const auto  sizes = calculate_storage_size(size() + 1, s, a);
+    poly_vector v(allocator_traits::select_on_container_copy_construction(base().get_allocator_ref()));
+
+    v.base().allocate(sizes.first);
+    v.init_ptrs(size() + 1);
+    v._align_max         = sizes.second;
+    const auto new_index = std::distance(cbegin(), position);
+    auto       from      = std::next(begin_elem(), new_index);
+
+    v.set_ptrs(poly_uninitialized_copy(
+        v.base(), v.begin_elem(), begin_elem(), from, std::next(cbegin_elem(), size() + 1), v.max_align()));
+    v.push_back(std::forward<descendant_type>(val));
+    // clone remaining elems
+    // TODO: branch on noexcept movable
+    auto dst_storage = v.free_storage();
+    auto dst         = v.end_elem();
+    for (; from != end_elem(); ++from, ++dst) {
+        *dst            = *from;
+        dst->ptr.first  = next_aligned_storage(dst_storage, v.max_align());
+        dst->ptr.second = from->policy().clone(v.base().get_allocator_ref(), from->ptr.second, dst->ptr.first);
+        dst_storage     = static_cast<pointer>(dst->ptr.first) + dst->size();
+    }
+    v._free_elem = dst;
+    this->swap(v);
+    return std::next(begin(), new_index);
 }
 
 } // namespace estd
