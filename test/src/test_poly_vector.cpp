@@ -471,6 +471,12 @@ TEST_CASE("erase_from_end_position_is_same_as_pop_back", "[poly_vector_basic_tes
     REQUIRE(id == v[0].getId());
 }
 
+TEST_CASE("get_allocator fetches the allocator used by the container", "[poly_vector_basic_tests]")
+{
+    estd::poly_vector<Interface> v {};
+    REQUIRE(v.get_allocator() == estd::poly_vector<Interface>::allocator_type());
+}
+
 TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy,
     estd::virtual_cloning_policy<Interface>, estd::delegate_cloning_policy<Interface>)
 {
