@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-	<Type Name="estd::poly_vector&lt;*&gt;">
-		<DisplayString>{{ size={_free_elem-(elem_ptr*)_storage} , capacity={(elem_ptr*)_begin_storage-(elem_ptr*)_storage} }}</DisplayString>
-		<Expand>
-			<Item Name="size">_free_elem-(elem_ptr*)_storage</Item>
-			<Item Name="capacity">(elem_ptr*)_begin_storage-(elem_ptr*)_storage</Item>
-			<Item Name="allocator">*static_cast&lt;allocator_type*&gt;(this)</Item>
-			<Item Name="average object size" Condition="_free_elem-(elem_ptr*)_storage > 0">((char*)_free_storage - (char*)_begin_storage +(_free_elem-(elem_ptr*)_storage) - 1)/(_free_elem-(elem_ptr*)_storage)</Item>
-			<Item Name="storage size" Condition="(char*)_end_storage-(char*)_storage > 0">(char*)_end_storage-(char*)_begin_storage</Item>
-			<Item Name="storage headroom" Condition="(char*)_end_storage-(char*)_storage > 0">(char*)_end_storage-(char*)_free_storage</Item>
-			<IndexListItems>
-				<Size>_free_elem-reinterpret_cast&lt;elem_ptr*&gt;(_storage)</Size>
-				<ValueNode>*(((elem_ptr*)_storage)[$i].ptr.second)</ValueNode>
-			</IndexListItems>
-		</Expand>
-	</Type>
+  <Type Name="estd::poly_vector&lt;*&gt;">
+    <DisplayString>{{ size={_free_elem-(elem_ptr*)_storage} , capacity={(elem_ptr*)_begin_storage-(elem_ptr*)_storage} }}</DisplayString>
+    <Expand>
+      <Item Name="size">_free_elem-(elem_ptr*)_storage</Item>
+      <Item Name="capacity">(elem_ptr*)_begin_storage-(elem_ptr*)_storage</Item>
+      <Item Name="allocator">*static_cast&lt;allocator_type*&gt;(this)</Item>
+      <!--Item Name="average object size" Condition="_free_elem-(elem_ptr*)_storage > 0">((char*)free_storage() - (char*)_begin_storage +(_free_elem-(elem_ptr*)_storage) - 1)/(_free_elem-(elem_ptr*)_storage)</Item>
+      <Item Name="storage size" Condition="(char*)_end_storage-(char*)_storage > 0">(char*)_end_storage-(char*)_begin_storage</Item>
+      <Item Name="storage headroom" Condition="(char*)_end_storage-(char*)_storage > 0">(char*)_end_storage-(char*)free_storage()</Item!-->
+      <IndexListItems>
+        <Size>_free_elem-reinterpret_cast&lt;elem_ptr*&gt;(_storage)</Size>
+        <ValueNode>*(((elem_ptr*)_storage)[$i].ptr.second)</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
 </AutoVisualizer>
