@@ -811,7 +811,7 @@ template <class I, class A, class C>
 inline poly_vector<I, A, C>::poly_vector()
     : _free_elem {}
     , _begin_storage {}
-    , _align_max { 1 }
+    , _align_max { default_alignement }
 {
 }
 
@@ -820,7 +820,7 @@ inline poly_vector<I, A, C>::poly_vector(const allocator_type& alloc)
     : poly_vector_impl::allocator_base<allocator_type>(alloc)
     , _free_elem {}
     , _begin_storage {}
-    , _align_max { 1 } {};
+    , _align_max { default_alignement } {};
 
 template <class I, class A, class C>
 inline poly_vector<I, A, C>::poly_vector(const poly_vector& other)

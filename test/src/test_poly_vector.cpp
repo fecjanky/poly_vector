@@ -10,8 +10,7 @@
 
 std::atomic<size_t> Interface::last_id { 0 };
 
-TEST_CASE("default_constructed_poly_vec_is_empty_with_max_align_equals_one",
-    "[poly_vector_basic_tests]")
+TEST_CASE("default_constructed_poly_vec_is_empty_with_max_align_equals_one", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v;
     REQUIRE(v.empty());
@@ -21,11 +20,10 @@ TEST_CASE("default_constructed_poly_vec_is_empty_with_max_align_equals_one",
     REQUIRE(0 == v.capacity());
     REQUIRE(0 == v.capacities().first);
     REQUIRE(0 == v.capacities().second);
-    REQUIRE(1 == v.max_align());
+    REQUIRE(estd::poly_vector<Interface>::default_alignement == v.max_align());
 }
 
-TEST_CASE("reserve_increases_capacity_with_default_align_as_max_align_t",
-    "[poly_vector_basic_tests]")
+TEST_CASE("reserve_increases_capacity_with_default_align_as_max_align_t", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v;
     constexpr size_t             n     = 16;
@@ -41,8 +39,7 @@ TEST_CASE("reserve_increases_capacity_with_default_align_as_max_align_t",
     REQUIRE(alignof(std::max_align_t) == v.max_align());
 }
 
-TEST_CASE("reserve_reallocates_capacity_when_max_align_changes",
-    "[poly_vector_basic_tests]")
+TEST_CASE("reserve_reallocates_capacity_when_max_align_changes", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v;
     constexpr size_t             n     = 16;
@@ -53,9 +50,7 @@ TEST_CASE("reserve_reallocates_capacity_when_max_align_changes",
     REQUIRE(old_data != v.data());
 }
 
-TEST_CASE(
-    "reserve_does_not_increase_capacity_when_size_is_less_than_current_capacity",
-    "[poly_vector_basic_tests]")
+TEST_CASE("reserve_does_not_increase_capacity_when_size_is_less_than_current_capacity", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v;
     constexpr size_t             n     = 16;
@@ -66,8 +61,7 @@ TEST_CASE(
     REQUIRE(capacities == v.capacities());
 }
 
-TEST_CASE("descendants_of_interface_can_be_pushed_back_into_the_vector",
-    "[poly_vector_basic_tests]")
+TEST_CASE("descendants_of_interface_can_be_pushed_back_into_the_vector", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v;
     v.push_back(Impl1(3.14));
@@ -77,31 +71,22 @@ TEST_CASE("descendants_of_interface_can_be_pushed_back_into_the_vector",
 
 TEST_CASE("is_not_copyable_with_no_cloning_policy", "[poly_vector_basic_tests]")
 {
-    estd::poly_vector<Interface,
-        std::allocator<Interface>,
-        estd::no_cloning_policy<Interface>>
-        v {};
-    v.reserve(2,
-        std::max(sizeof(Impl1), sizeof(Impl2)),
-        std::max(alignof(Impl1), alignof(Impl2)));
+    estd::poly_vector<Interface, std::allocator<Interface>, estd::no_cloning_policy<Interface>> v {};
+    v.reserve(2, std::max(sizeof(Impl1), sizeof(Impl2)), std::max(alignof(Impl1), alignof(Impl2)));
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     REQUIRE_THROWS_AS(v.push_back(Impl2()), estd::no_cloning_exception);
 }
 
-template <typename T>
-bool is_aligned_properly(T& obj)
+template <typename T> bool is_aligned_properly(T& obj)
 {
     return reinterpret_cast<std::uintptr_t>(&obj) % alignof(T) == 0;
 }
 
-TEST_CASE("objects_are_allocated_with_proper_alignment",
-    "[poly_vector_basic_tests]")
+TEST_CASE("objects_are_allocated_with_proper_alignment", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v {};
-    v.reserve(2,
-        std::max(sizeof(Impl1), sizeof(Impl2)),
-        std::max(alignof(Impl1), alignof(Impl2)));
+    v.reserve(2, std::max(sizeof(Impl1), sizeof(Impl2)), std::max(alignof(Impl1), alignof(Impl2)));
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     REQUIRE(is_aligned_properly(static_cast<Impl1&>(v[0])));
@@ -110,11 +95,8 @@ TEST_CASE("objects_are_allocated_with_proper_alignment",
 
 TEST_CASE("no_cloning_policy_gives_e_what", "[poly_vector_basic_tests]")
 {
-    bool throwed = false;
-    estd::poly_vector<Interface,
-        std::allocator<Interface>,
-        estd::no_cloning_policy<Interface>>
-        v {};
+    bool                                                                                        throwed = false;
+    estd::poly_vector<Interface, std::allocator<Interface>, estd::no_cloning_policy<Interface>> v {};
     try {
         v.reserve(1, sizeof(Impl1));
         v.push_back(Impl1(3.14));
@@ -126,8 +108,7 @@ TEST_CASE("no_cloning_policy_gives_e_what", "[poly_vector_basic_tests]")
     REQUIRE(throwed);
 }
 
-TEST_CASE("erase_from_begin_to_end_clears_the_vector",
-    "[poly_vector_basic_tests]")
+TEST_CASE("erase_from_begin_to_end_clears_the_vector", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v {};
     v.push_back(Impl1(3.14));
@@ -137,8 +118,7 @@ TEST_CASE("erase_from_begin_to_end_clears_the_vector",
     REQUIRE(0 == v.size());
 }
 
-TEST_CASE("erase_can_be_called_with_any_valid_iterator_to_a_vector_elem",
-    "[poly_vector_basic_tests]")
+TEST_CASE("erase_can_be_called_with_any_valid_iterator_to_a_vector_elem", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v {};
     v.push_back(Impl1(3.14));
@@ -154,8 +134,7 @@ TEST_CASE("erase_can_be_called_with_any_valid_iterator_to_a_vector_elem",
     REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v[2]));
 }
 
-TEST_CASE("erase_includes_end_remove_elems_from_end",
-    "[poly_vector_basic_tests]")
+TEST_CASE("erase_includes_end_remove_elems_from_end", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v {};
     v.push_back(Impl1(3.14));
@@ -168,8 +147,7 @@ TEST_CASE("erase_includes_end_remove_elems_from_end",
     REQUIRE(id == v[0].getId());
 }
 
-TEST_CASE("erase_from_end_position_is_same_as_pop_back",
-    "[poly_vector_basic_tests]")
+TEST_CASE("erase_from_end_position_is_same_as_pop_back", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v {};
     v.push_back(Impl1(3.14));
@@ -180,10 +158,7 @@ TEST_CASE("erase_from_end_position_is_same_as_pop_back",
     REQUIRE(id == v[0].getId());
 }
 
-TYPE_P_TEST_CASE("poly vector modifiers test",
-    "[poly_vector]",
-    CloningPolicy,
-    estd::virtual_cloning_policy<Interface>,
+TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy, estd::virtual_cloning_policy<Interface>,
     estd::delegate_cloning_policy<Interface>)
 {
     using vector = estd::poly_vector<Interface, std::allocator<Interface>, CloningPolicy>;
@@ -290,13 +265,12 @@ TYPE_P_TEST_CASE("poly vector modifiers test",
         while (v.capacity() - v.size() > 0) {
             v.push_back(Impl1 {});
         }
-        if (!std::is_same<CloningPolicy,
-                estd::delegate_cloning_policy<Interface>> {}) {
-            std::vector<uint8_t> ref_storage(static_cast<uint8_t*>(v.data().first),
-                static_cast<uint8_t*>(v.data().second));
-            auto                 data = v.data();
-            auto                 size = v.sizes();
-            auto                 caps = v.capacities();
+        if (!std::is_same<CloningPolicy, estd::delegate_cloning_policy<Interface>> {}) {
+            std::vector<uint8_t> ref_storage(
+                static_cast<uint8_t*>(v.data().first), static_cast<uint8_t*>(v.data().second));
+            auto data = v.data();
+            auto size = v.sizes();
+            auto caps = v.capacities();
 
             REQUIRE_THROWS_AS(v.push_back(Impl2 {}), std::exception);
 
@@ -322,8 +296,7 @@ TYPE_P_TEST_CASE("poly vector modifiers test",
         auto start = v.begin() + 3;
         auto end   = start + 1;
 
-        if (!std::is_same<CloningPolicy,
-                estd::delegate_cloning_policy<Interface>> {}) {
+        if (!std::is_same<CloningPolicy, estd::delegate_cloning_policy<Interface>> {}) {
             v.at(5).set_throw_on_copy_construction(true);
             auto old_sizes = v.sizes();
             REQUIRE_THROWS_AS(v.erase(start, end), std::exception);
