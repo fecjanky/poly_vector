@@ -743,7 +743,6 @@ private:
     ////////////////////////
     static void_pointer       next_aligned_storage(void_pointer p, size_t align) noexcept;
     static size_t             storage_size(const_void_pointer b, const_void_pointer e) noexcept;
-    static size_t             occupied_storage_size(elem_ptr_const_pointer p) noexcept;
     std::pair<size_t, size_t> calculate_storage_size(
         size_t new_size, size_t new_elem_size, size_t new_elem_alignment) const noexcept;
     size_type occupied_storage(elem_ptr_const_pointer p) const noexcept;
@@ -776,8 +775,6 @@ private:
     void                                  swap_ptrs(poly_vector&& rhs);
     template <class T> void               push_back_new_elem(T&& obj);
     template <class T> void               push_back_new_elem_w_storage_increase(T&& obj);
-    void                                  push_back_new_elem_w_storage_increase_copy(poly_vector& v, std::true_type);
-    void                                  push_back_new_elem_w_storage_increase_copy(poly_vector& v, std::false_type);
     bool                                  can_construct_new_elem(size_t s, size_t align) noexcept;
     void_pointer                          next_aligned_storage(size_t align) const noexcept;
     size_t                                avg_obj_size(size_t align = 1) const noexcept;
@@ -1190,18 +1187,6 @@ inline auto poly_vector<IF, Allocator, CloningPolicy>::poly_uninitialized_move(m
     return std::make_tuple(dst, storage_begin, dst_storage);
 }
 
-template <class IF, class Allocator, class CloningPolicy>
-inline auto poly_vector<IF, Allocator, CloningPolicy>::poly_copy(my_base& a, elem_ptr_pointer dst_begin,
-    elem_ptr_const_pointer begin, elem_ptr_const_pointer end, size_t max_align) -> poly_copy_descr
-{
-    // Invariant: dst has enough storage both control and data to hold the objects and ptrs from range [begin,end)
-    for (auto dst_prev = dst_begin; begin != end; ++begin) {
-        *dst_begin = *begin;
-        dst_begin->p
-    }
-    return poly_copy_descr();
-}
-
 template <class I, class A, class C>
 inline auto poly_vector<I, A, C>::copy_assign_impl(const poly_vector& rhs) -> poly_vector&
 {
@@ -1440,12 +1425,6 @@ template <class I, class A, class C> inline void poly_vector<I, A, C>::init_ptrs
 {
     _free_elem     = static_cast<elem_ptr_pointer>(base().storage());
     _begin_storage = begin_elem() + cap;
-}
-
-template <class I, class A, class C>
-inline size_t poly_vector<I, A, C>::occupied_storage_size(elem_ptr_const_pointer p) noexcept
-{
-    return size_t();
 }
 
 template <class I, class A, class C>
