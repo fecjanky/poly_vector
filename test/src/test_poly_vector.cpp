@@ -78,6 +78,31 @@ TEST_CASE(
     REQUIRE(2 == v.size());
 }
 
+TEST_CASE("reverse iterators on a vector", "[poly_vector_basic_tests]")
+{
+    estd::poly_vector<Interface> v;
+    v.push_back(Impl1(3.14));
+    v.push_back(Impl2());
+    const auto& cv      = v;
+    const auto  rbegin  = v.rbegin();
+    const auto  crbegin = cv.rbegin();
+
+    REQUIRE(rbegin->getId() == v.back().getId());
+    REQUIRE(crbegin->getId() == v.back().getId());
+
+    const auto second  = rbegin + 1;
+    const auto csecond = crbegin + 1;
+
+    REQUIRE(second->getId() == v.front().getId());
+    REQUIRE(csecond->getId() == v.front().getId());
+
+    const auto rend  = second + 1;
+    const auto crend = csecond + 1;
+
+    REQUIRE(rend == v.rend());
+    REQUIRE(crend == cv.rend());
+}
+
 TEST_CASE("range based for can be used with the vector", "[poly_vector_basic_tests]")
 {
     estd::poly_vector<Interface> v;
@@ -285,6 +310,12 @@ TEST_CASE("no_cloning_policy_gives_e_what", "[poly_vector_basic_tests]")
     v.push_back(Impl1(3.14));
 
     REQUIRE_THROWS_AS(v.push_back(Impl1(3.14)), estd::no_cloning_exception);
+    try {
+        v.push_back(Impl1(3.14));
+    } catch (const estd::no_cloning_exception& e) {
+        std::string emsg = e.what();
+        REQUIRE(emsg.find("no_cloning_policy") != std::string::npos);
+    }
 }
 
 TEST_CASE("erase_from_begin_to_end_clears_the_vector", "[poly_vector_basic_tests]")

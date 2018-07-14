@@ -747,16 +747,16 @@ public:
     ///////////////////////////////////////////////
     // Iterators
     ///////////////////////////////////////////////
-    iterator         begin() noexcept;
-    iterator         end() noexcept;
-    const_iterator   begin() const noexcept;
-    const_iterator   end() const noexcept;
-    reverse_iterator rbegin() noexcept;
-    reverse_iterator rend() noexcept;
-    const_iterator   rbegin() const noexcept;
-    const_iterator   rend() const noexcept;
-    const_iterator   cbegin() const noexcept;
-    const_iterator   cend() const noexcept;
+    iterator               begin() noexcept;
+    iterator               end() noexcept;
+    const_iterator         begin() const noexcept;
+    const_iterator         end() const noexcept;
+    reverse_iterator       rbegin() noexcept;
+    reverse_iterator       rend() noexcept;
+    const_reverse_iterator rbegin() const noexcept;
+    const_reverse_iterator rend() const noexcept;
+    const_iterator         cbegin() const noexcept;
+    const_iterator         cend() const noexcept;
     ///////////////////////////////////////////////
     // Capacity
     ///////////////////////////////////////////////
@@ -1024,25 +1024,25 @@ inline auto poly_vector<I, A, C>::end() const noexcept -> const_iterator
 template <class I, class A, class C>
 inline auto poly_vector<I, A, C>::rbegin() noexcept -> reverse_iterator
 {
-    return reverse_iterator(--end());
+    return std::make_reverse_iterator(end());
 }
 
 template <class I, class A, class C>
 inline auto poly_vector<I, A, C>::rend() noexcept -> reverse_iterator
 {
-    return reverse_iterator(--begin());
+    return std::make_reverse_iterator(begin());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::rbegin() const noexcept -> const_iterator
+inline auto poly_vector<I, A, C>::rbegin() const noexcept -> const_reverse_iterator
 {
-    return const_iterator(--end());
+    return std::make_reverse_iterator(end());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::rend() const noexcept -> const_iterator
+inline auto poly_vector<I, A, C>::rend() const noexcept -> const_reverse_iterator
 {
-    return const_iterator(--begin());
+    return std::make_reverse_iterator(begin());
 }
 
 template <class IF, class Allocator, class CloningPolicy>
