@@ -8,7 +8,7 @@
 #include <poly_vector.h>
 #include <test_poly_vector.h>
 
-using namespace estd::poly_vector_impl;
+using namespace poly::poly_vector_impl;
 
 template <bool B> struct s_has_aeq {
     using is_always_equal = std::integral_constant<bool, B>;

@@ -33,7 +33,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace estd {
+namespace poly {
 template <typename T> struct type_tag {
     using type = T;
 };
@@ -315,7 +315,7 @@ namespace poly_vector_impl {
         using void_pointer     = typename allocator_traits::void_pointer;
 
         using policy_impl
-            = ::estd::poly_vector_impl::is_cloning_policy_impl<Policy, Interface, allocator_type>;
+            = ::poly::poly_vector_impl::is_cloning_policy_impl<Policy, Interface, allocator_type>;
         using has_move_t       = typename policy_impl::has_move_t;
         using noexcept_movable = std::integral_constant<bool,
             poly_vector_impl::is_noexcept_movable_t<Policy>::value && has_move_t::value>;

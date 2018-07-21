@@ -176,13 +176,13 @@ public:
     }
 
 private:
-    estd::poly_vector<Interface, std::allocator<Interface>, cloningp> v;
+    poly::poly_vector<Interface, std::allocator<Interface>, cloningp> v;
     std::unique_ptr<double[]>                                         p;
     Cookie                                                            cookie;
     int                                                               pad[32];
 };
 
-using Impl2 = Impl2T<estd::virtual_cloning_policy>;
+using Impl2 = Impl2T<poly::virtual_cloning_policy>;
 
 namespace custom {
 struct CustInterface;
