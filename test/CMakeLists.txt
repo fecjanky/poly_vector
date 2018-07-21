@@ -18,7 +18,7 @@ endif (MSVC)
 
 add_executable(poly_vector_test  ${SRC})
 
-if( ${CMAKE_BUILD_TYPE} == "COVERAGE")
+if( ${CMAKE_BUILD_TYPE} EQUAL "COVERAGE")
 target_compile_definitions(poly_vector_test POLY_VECTOR_COVERAGE_BUILD)
 endif()
 
