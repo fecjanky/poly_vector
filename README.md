@@ -33,35 +33,75 @@ Given a class hierarchy as illustrated by the figure below:
 One can store implementations of Interface interface in a ```poly_vector<Interface>``` container
 
 ```cpp
-...
-using namespace poly;
+#include <array>
+#include <iostream>
+#include <poly_vector.h>
 
-poly_vector<Interface> v;
+struct Interface {
+    virtual void doSomething() = 0;
+    virtual ~Interface()       = default;
+};
 
-v.push_back(ImplA());
-v.emplace_back<ImplB>();
-v.emplace_back<ImplC>();
+class ImplA : public Interface {
+public:
+    explicit ImplA(double _d = 0.0)
+        : d { _d }
+    {
+    }
+    void doSomething() override { std::cout << "ImplA:" << d << '\n'; }
 
-for(const Interface& i : v){
-// Invoke doSomething on all objects
-    i.doSomething();
+private:
+    double d;
+};
+
+template <size_t N> struct ImplB : public Interface {
+    void                doSomething() override { std::cout << "ImplB:" << N << '\n'; }
+    std::array<char, N> arr;
+};
+
+struct ImplC : public Interface {
+    void doSomething() override { std::cout << "ImplC\n"; }
+};
+
+int main()
+{
+    using poly::poly_vector;
+
+    poly_vector<Interface> v;
+
+    v.push_back(ImplA());
+    v.emplace_back<ImplB<128>>();
+    v.emplace_back<ImplC>();
+
+    for (Interface& i : v) {
+        // Invoke doSomething on all objects
+        i.doSomething();
+    }
+
+    // remove the last element
+    v.pop_back();
+
+    // invoke doSomething() on ImplB object
+    v.back().doSomething();
+
+    // remove the first elem
+    v.erase(v.begin());
+
+    // invoke doSomething() on ImplB object (again)
+    v.front().doSomething();
 }
 
-// remove the last element
-v.pop_back();
-
-// invoke doSomething() on ImplB object
-v.back().doSomething();
-
-// remove the first elem
-v.erase(v.begin());
-
-// invoke doSomething() on ImplB object (again)
-v.front().doSomething();
-
-...
 
 ```
+The program above outputs:
+```
+ImplA:0
+ImplB:128
+ImplC
+ImplB:128
+ImplB:128
+```
+
 
 The default template arguments of ```poly_vector``` allows
 that if your implementation classes are regular in terms of copying/moving, ```poly_vector``` will 
