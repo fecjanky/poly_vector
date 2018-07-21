@@ -236,6 +236,7 @@ template <class IF, class Allocator = std::allocator<IF>> struct CustomCloningPo
     using noexcept_movable = std::false_type;
     using void_pointer     = typename std::allocator_traits<Allocator>::void_pointer;
     using pointer          = typename std::allocator_traits<Allocator>::pointer;
+    using const_pointer    = typename std::allocator_traits<Allocator>::const_pointer;
     using allocator_type   = Allocator;
     CustomCloningPolicyT() = default;
     template <typename T> CustomCloningPolicyT(estd::type_tag<T>) {};

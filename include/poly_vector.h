@@ -333,9 +333,9 @@ namespace poly_vector_impl {
             "Policy is not a cloning policy");
         using pointer        = typename Policy::pointer;
         using void_pointer   = typename Policy::void_pointer;
-        using allocator_type = typename Policy::allocator_type;
+        using allocator_type = Allocator;
         using policy_impl
-            = ::estd::poly_vector_impl::is_cloning_policy_impl<Policy, Interface, Allocator>;
+            = ::estd::poly_vector_impl::is_cloning_policy_impl<Policy, Interface, allocator_type>;
         using has_move_t       = typename policy_impl::has_move_t;
         using noexcept_movable = std::integral_constant<bool,
             poly_vector_impl::is_noexcept_movable_t<Policy>::value && has_move_t::value>;
@@ -371,11 +371,11 @@ template <class IF, class Allocator = std::allocator<IF>,
     class CloningPolicy = delegate_cloning_policy<IF, Allocator>>
 class poly_vector;
 
-template <class Allocator, class CloningPolicy>
-struct poly_vector_elem_ptr : private CloningPolicy {
-    using IF           = typename std::allocator_traits<Allocator>::value_type;
-    using void_pointer = typename std::allocator_traits<Allocator>::void_pointer;
-    using pointer      = typename std::allocator_traits<Allocator>::pointer;
+template <class CloningPolicy> struct poly_vector_elem_ptr : private CloningPolicy {
+    using void_pointer = typename CloningPolicy::void_pointer;
+    using pointer      = typename CloningPolicy::pointer;
+    using IF           = std::remove_reference_t<decltype(*std::declval<pointer>())>;
+
     using size_descr_t = std::pair<size_t, size_t>;
     using size_func_t  = size_descr_t();
     using policy_t     = CloningPolicy;
@@ -431,8 +431,7 @@ private:
     size_descr_t sf;
 };
 
-template <class A, class C>
-void swap(poly_vector_elem_ptr<A, C>& lhs, poly_vector_elem_ptr<A, C>& rhs) noexcept
+template <class C> void swap(poly_vector_elem_ptr<C>& lhs, poly_vector_elem_ptr<C>& rhs) noexcept
 {
     lhs.swap(rhs);
 }
@@ -443,6 +442,7 @@ template <class IF, class Allocator = std::allocator<IF>> struct virtual_cloning
     using noexcept_movable = std::integral_constant<bool, nem>;
     using void_pointer     = typename std::allocator_traits<Allocator>::void_pointer;
     using pointer          = typename std::allocator_traits<Allocator>::pointer;
+    using const_pointer    = typename std::allocator_traits<Allocator>::const_pointer;
     using allocator_type   = Allocator;
 
     virtual_cloning_policy() = default;
@@ -465,6 +465,7 @@ template <class IF, class Allocator = std::allocator<IF>> struct no_cloning_poli
     using noexcept_movable = std::false_type;
     using void_pointer     = typename std::allocator_traits<Allocator>::void_pointer;
     using pointer          = typename std::allocator_traits<Allocator>::pointer;
+    using const_pointer    = typename std::allocator_traits<Allocator>::pointer;
     using allocator_type   = Allocator;
     no_cloning_policy()    = default;
     template <typename T> no_cloning_policy(type_tag<T>) {};
@@ -540,17 +541,16 @@ private:
     clone_func_t cf;
 };
 
-template <class IF, class Allocator, class CP>
+template <class IF, class CP>
 class poly_vector_iterator : public std::iterator<std::random_access_iterator_tag, IF> {
 public:
     using interface_type = IF;
-    using allocator_type = Allocator;
     using cloning_policy = CP;
-    using p_elem         = poly_vector_elem_ptr<Allocator, CP>;
+    using p_elem         = poly_vector_elem_ptr<CP>;
     using elem     = std::conditional_t<std::is_const<IF>::value, std::add_const_t<p_elem>, p_elem>;
-    using void_ptr = typename std::allocator_traits<Allocator>::void_pointer;
-    using pointer  = typename std::allocator_traits<Allocator>::pointer;
-    using const_pointer   = typename std::allocator_traits<Allocator>::const_pointer;
+    using void_ptr = typename cloning_policy::void_pointer;
+    using pointer  = typename cloning_policy::pointer;
+    using const_pointer   = typename cloning_policy::const_pointer;
     using reference       = decltype(*std::declval<pointer>());
     using const_reference = decltype(*std::declval<const_pointer>());
     using elem_ptr        = typename std::pointer_traits<pointer>::template rebind<elem>;
@@ -568,8 +568,8 @@ public:
 
     template <class T,
         typename = std::enable_if_t<std::is_same<std::remove_const_t<IF>, T>::value
-            && !std::is_same<poly_vector_iterator, poly_vector_iterator<T, Allocator, CP>>::value>>
-    poly_vector_iterator(const poly_vector_iterator<T, Allocator, CP>& other)
+            && !std::is_same<poly_vector_iterator, poly_vector_iterator<T, CP>>::value>>
+    poly_vector_iterator(const poly_vector_iterator<T, CP>& other)
         : curr { other.get() }
     {
     }
@@ -640,30 +640,28 @@ private:
     elem_ptr curr;
 };
 
-template <class IF, class Allocator, class CP>
-void swap(
-    poly_vector_iterator<IF, Allocator, CP>& lhs, poly_vector_iterator<IF, Allocator, CP>& rhs)
+template <class IF, class CP>
+void swap(poly_vector_iterator<IF, CP>& lhs, poly_vector_iterator<IF, CP>& rhs)
 {
     lhs.swap(rhs);
 }
-template <class IF, class Allocator, class CP>
-poly_vector_iterator<IF, Allocator, CP> operator+(poly_vector_iterator<IF, Allocator, CP> a,
-    typename poly_vector_iterator<IF, Allocator, CP>::difference_type                     n)
+template <class IF, class CP>
+poly_vector_iterator<IF, CP> operator+(
+    poly_vector_iterator<IF, CP> a, typename poly_vector_iterator<IF, CP>::difference_type n)
 {
     auto temp = a;
     return a += n;
 }
-template <class IF, class Allocator, class CP>
-poly_vector_iterator<IF, Allocator, CP> operator+(
-    typename poly_vector_iterator<IF, Allocator, CP>::difference_type n,
-    poly_vector_iterator<IF, Allocator, CP>                           a)
+template <class IF, class CP>
+poly_vector_iterator<IF, CP> operator+(
+    typename poly_vector_iterator<IF, CP>::difference_type n, poly_vector_iterator<IF, CP> a)
 {
     auto temp = a;
     return a += n;
 }
-template <class IF, class Allocator, class CP>
-poly_vector_iterator<IF, Allocator, CP> operator-(poly_vector_iterator<IF, Allocator, CP> i,
-    typename poly_vector_iterator<IF, Allocator, CP>::difference_type                     n)
+template <class IF, class CP>
+poly_vector_iterator<IF, CP> operator-(
+    poly_vector_iterator<IF, CP> i, typename poly_vector_iterator<IF, CP>::difference_type n)
 {
     auto temp = i;
     return i -= n;
@@ -692,13 +690,12 @@ public:
     using const_void_pointer        = typename my_base::const_void_pointer;
     using size_type                 = std::size_t;
     using cloning_policy            = CloningPolicy;
-    using iterator = poly_vector_iterator<interface_type, interface_allocator_type, cloning_policy>;
-    using const_iterator
-        = poly_vector_iterator<const interface_type, interface_allocator_type, cloning_policy>;
-    using reverse_iterator                = std::reverse_iterator<iterator>;
-    using const_reverse_iterator          = std::reverse_iterator<const_iterator>;
-    using move_is_noexcept_t              = std::is_nothrow_move_assignable<my_base>;
-    using cloning_policy_traits           = poly_vector_impl::cloning_policy_traits<CloningPolicy,
+    using iterator                  = poly_vector_iterator<interface_type, cloning_policy>;
+    using const_iterator            = poly_vector_iterator<interface_type const, cloning_policy>;
+    using reverse_iterator          = std::reverse_iterator<iterator>;
+    using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
+    using move_is_noexcept_t        = std::is_nothrow_move_assignable<my_base>;
+    using cloning_policy_traits     = poly_vector_impl::cloning_policy_traits<CloningPolicy,
         interface_type, interface_allocator_type>;
     using interface_type_noexcept_movable = typename cloning_policy_traits::noexcept_movable;
 
@@ -796,7 +793,7 @@ public:
 private:
     template <typename T> using type_tag = type_tag<T>;
 
-    using elem_ptr         = poly_vector_elem_ptr<interface_allocator_type, cloning_policy>;
+    using elem_ptr         = poly_vector_elem_ptr<cloning_policy>;
     using elem_ptr_pointer = typename allocator_traits::template rebind_traits<elem_ptr>::pointer;
     using elem_ptr_const_pointer =
         typename allocator_traits::template rebind_traits<elem_ptr>::const_pointer;
