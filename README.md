@@ -144,7 +144,7 @@ If you are using the cmake package and building with Visual Studio the natvis fi
 to your project automatically. Otherwise you'll have to install the natvis file manually 
 from visualizer/poly_vector.natvis
 
-![](doc/images/natvis.png)
+![](doc/images/natvis.PNG)
 *Natvis debug visualization*
 
 ## TODOs
