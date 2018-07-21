@@ -15,6 +15,10 @@ set(POLY_VECTOR_CMAKE_LIB_DIR lib/cmake/PolyVector)
 set(POLY_VECTOR_CMAKE_INSTALL_INCLUDE_DIR include/poly_vector)
 set(POLY_VECTOR_CMAKE_INSTALL_SHARE_DIR share/poly_vector)
 
+if(MSVC)
+target_compile_definitions(PolyVector INTERFACE POLY_VECTOR_MSVC_WORKAROUND)
+endif()
+
 target_include_directories(PolyVector
   INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

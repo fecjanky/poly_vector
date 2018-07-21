@@ -144,33 +144,34 @@ namespace poly_vector_impl {
             && (has_clone_t::value || (has_move_t::value && is_noexcept_movable_t<T>::value));
     };
 
-    template <class Allocator> struct allocator_base : private Allocator {
+    template <class _Allocator> struct allocator_base : public _Allocator {
 
-        using allocator_traits = std::allocator_traits<Allocator>;
+        using allocator_type   = _Allocator;
+        using allocator_traits = std::allocator_traits<allocator_type>;
         using value_type       = typename allocator_traits::value_type;
         using propagate_on_container_copy_assignment =
             typename allocator_traits::propagate_on_container_copy_assignment;
         using propagate_on_container_swap = typename allocator_traits::propagate_on_container_swap;
         using propagate_on_container_move_assignment =
             typename allocator_traits::propagate_on_container_move_assignment;
-        using allocator_is_always_equal = poly_vector_impl::allocator_is_always_equal_t<Allocator>;
+        using allocator_is_always_equal
+            = poly_vector_impl::allocator_is_always_equal_t<allocator_type>;
         static_assert(std::is_same<value_type, uint8_t>::value, "requires a byte allocator");
-        using allocator_type     = Allocator;
         using void_pointer       = typename allocator_traits::void_pointer;
         using const_void_pointer = typename allocator_traits::const_void_pointer;
         using difference_type    = typename allocator_traits::difference_type;
         using pointer            = typename allocator_traits::pointer;
         using const_pointer      = typename allocator_traits::const_pointer;
         //////////////////////////////////////////////
-        explicit allocator_base(const Allocator& a = Allocator())
-            : Allocator(a)
+        explicit allocator_base(const allocator_type& a = allocator_type())
+            : allocator_type(a)
             , _storage {}
             , _end_storage {}
         {
         }
 
-        explicit allocator_base(size_t n, const Allocator& a = Allocator())
-            : Allocator(a)
+        explicit allocator_base(size_t n, const allocator_type& a = allocator_type())
+            : allocator_type(a)
             , _storage {}
             , _end_storage {}
         {
@@ -188,7 +189,7 @@ namespace poly_vector_impl {
         }
 
         allocator_base(allocator_base&& a) noexcept
-            : Allocator(std::move(a.get_allocator_ref()))
+            : allocator_type(std::move(a.get_allocator_ref()))
             , _storage { a._storage }
             , _end_storage { a._end_storage }
         {
@@ -675,13 +676,22 @@ public:
     ///////////////////////////////////////////////
     // Member types
     ///////////////////////////////////////////////
+    using interface_type = std::decay_t<IF>;
     using allocator_type =
         typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
-    using interface_allocator_type   = Allocator;
+
+#ifdef POLY_VECTOR_MSVC_WORKAROUND
+    // NOTE: for some unknown reason if this rebind using declaration is not here
+    // Allocator type is the rebound allocator type
+    using interface_allocator_type =
+        typename std::allocator_traits<Allocator>::template rebind_alloc<IF>;
+#else
+    using interface_allocator_type = Allocator;
+#endif
+
     using interface_allocator_traits = std::allocator_traits<interface_allocator_type>;
     using allocator_traits           = std::allocator_traits<allocator_type>;
     using my_base                    = poly_vector_impl::allocator_base<allocator_type>;
-    using interface_type             = std::decay_t<IF>;
     using interface_pointer          = typename interface_allocator_traits::pointer;
     using const_interface_pointer    = typename interface_allocator_traits::const_pointer;
     using interface_reference        = std::add_lvalue_reference_t<interface_type>;
@@ -705,8 +715,8 @@ public:
     static_assert(std::is_same<IF, interface_type>::value,
         "Interface type must be a non-cv qualified user defined type");
     static_assert(std::is_polymorphic<interface_type>::value, "interface_type is not polymorphic");
-    static_assert(
-        poly_vector_impl::is_cloning_policy<CloningPolicy, interface_type, Allocator>::value,
+    static_assert(poly_vector_impl::is_cloning_policy<CloningPolicy, interface_type,
+                      interface_allocator_type>::value,
         "invalid cloning policy type");
     static constexpr auto default_avg_size   = 4 * sizeof(void*);
     static constexpr auto default_alignement = alignof(interface_reference);
