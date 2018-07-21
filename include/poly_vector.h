@@ -699,8 +699,7 @@ public:
     poly_vector();
     explicit poly_vector(const allocator_type& alloc);
     poly_vector(const poly_vector& other);
-    // TODO: exception specification missing
-    poly_vector(poly_vector&& other);
+    poly_vector(poly_vector&& other) noexcept;
     ~poly_vector();
 
     poly_vector& operator=(const poly_vector& rhs);
@@ -884,7 +883,7 @@ inline poly_vector<I, A, C>::poly_vector(const poly_vector& other)
 
 template <class I, class A, class C>
 inline poly_vector<I, A, C>::poly_vector(poly_vector&& other)
-    : poly_vector_impl::allocator_base<allocator_type>(std::move(other.base()))
+    : poly_vector_impl::allocator_base<allocator_type>(std::move(other.base())) noexcept
     , _free_elem { other._free_elem }
     , _begin_storage { other._begin_storage }
     , _align_max { other._align_max }
