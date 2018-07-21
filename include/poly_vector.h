@@ -1344,7 +1344,7 @@ inline auto poly_vector<I, A, C>::move_assign_impl(poly_vector&& rhs, std::true_
     using std::swap;
     tidy();
     base() = std::move(rhs.base());
-    // base().swap(rhs.base());
+    // TODO: revisit if swap is appropriate here
     swap_ptrs(std::move(rhs));
     swap(_align_max, rhs._align_max);
     return *this;
@@ -1482,7 +1482,7 @@ inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase(
     push_back_new_elem_w_storage_increase_copy(
         v, std::integral_constant < bool, noexcept_movable&& nothrow_ctor > {});
     v.push_back_new_elem(type_tag<T> {}, std::forward<Args>(args)...);
-    this->swap(v);
+    *this = std::move(v);
 }
 
 template <class I, class A, class C>
