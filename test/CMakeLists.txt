@@ -18,8 +18,8 @@ endif (MSVC)
 
 add_executable(poly_vector_test  ${SRC})
 
-if( ${CMAKE_BUILD_TYPE} EQUAL "COVERAGE")
-target_compile_definitions(poly_vector_test POLY_VECTOR_COVERAGE_BUILD)
+if(CMAKE_BUILD_TYPE STREQUAL "COVERAGE")
+	target_compile_definitions(poly_vector_test PRIVATE POLY_VECTOR_COVERAGE_BUILD)
 endif()
 
 target_link_libraries(poly_vector_test PolyVector Catch_lib)
