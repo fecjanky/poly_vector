@@ -100,7 +100,7 @@ The storage layout differences are illustrated by the figures below:
 *```poly::poly_vector<Interface>``` memory layout*
 
 
-## Debug Visualiztion support
+## Debug Visualization support
 
 So far the container has only Visual Studio debugger visualization support. 
 If you are using the cmake package and building with Visual Studio the natvis file will be added 
