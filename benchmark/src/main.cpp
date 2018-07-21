@@ -66,25 +66,34 @@ private:
     // double _op1;
 };
 
-constexpr auto num_objs
-    = 8 * cache_size / std::max(sizeof(Implementation1), sizeof(Implementation2));
+// constexpr auto num_objs
+//= 2 * cache_size / std::max(sizeof(Implementation1), sizeof(Implementation2));
 
 using namespace std::chrono;
 
 int main(int argc, char* argv[]) try {
 
     unsigned int iteration_count {};
-    if (argc < 2)
+    unsigned int num_objs {};
+    if (argc < 3)
         throw std::runtime_error("invalid num of arguments");
     {
-        std::istringstream iss(argv[1]);
-        iss.exceptions(std::istream::failbit | std::istream::badbit);
-        iss >> iteration_count;
+        {
+            std::istringstream iss(argv[1]);
+            iss.exceptions(std::istream::failbit | std::istream::badbit);
+            iss >> num_objs;
+        }
+        {
+            std::istringstream iss(argv[2]);
+            iss.exceptions(std::istream::failbit | std::istream::badbit);
+            iss >> iteration_count;
+        }
     }
     constexpr auto          align = cache_line_size;
     constexpr auto          size  = std::max(sizeof(Implementation1), sizeof(Implementation2));
     poly_vector<Interface>  pv;
     std::vector<Interface*> sv;
+    std::cout << "Num of objs: " << num_objs << '\n';
     pv.reserve(num_objs, size, align);
     sv.reserve(num_objs);
     for (auto i = 0; i < num_objs; ++i) {
@@ -127,7 +136,7 @@ int main(int argc, char* argv[]) try {
     return 0;
 } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
-    const char* help = "%s <iteration count>";
+    const char* help = "%s <obj count> <iteration count>";
     std::printf(help, argv[0]);
     return 1;
 } catch (...) {
