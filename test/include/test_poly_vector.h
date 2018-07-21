@@ -267,7 +267,7 @@ template <typename T> struct Allocator : private std::allocator<T> {
 
     template <typename U, typename = std::enable_if_t<!std::is_same<U, T>::value>>
     Allocator(Allocator<U> const& b)
-        : std::allocator<T>(b)
+        : std::allocator<T>(b.get_allocator())
     {
     }
 
@@ -278,6 +278,7 @@ template <typename T> struct Allocator : private std::allocator<T> {
     bool operator!=(Allocator const& rhs) const { return false; }
 
     std::allocator<T>& get_allocator() { return static_cast<std::allocator<T>&>(*this); }
+    std::allocator<T> const& get_allocator() const { return static_cast<std::allocator<T> const&>(*this); }
 };
 
 }
