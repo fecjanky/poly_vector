@@ -250,20 +250,23 @@ template <class IF, class Allocator = std::allocator<IF>> struct CustomCloningPo
 
 using CustomCloningPolicy = CustomCloningPolicyT<CustInterface>;
 
-template <typename always_eq, typename propagate, typename opeq> struct AllocatorDescriptor {
+template <typename always_eq, typename propagate, typename opeq, typename proponswap>
+struct AllocatorDescriptor {
     using is_always_equal                        = always_eq;
     using propagate_on_container_move_assignment = propagate;
     using operator_eq                            = opeq;
+    using propagate_on_container_swap            = proponswap;
 };
 
 template <typename T,
     typename AllocDescriptor
-    = AllocatorDescriptor<std::false_type, std::false_type, std::true_type>>
+    = AllocatorDescriptor<std::false_type, std::false_type, std::true_type, std::false_type>>
 struct Allocator : private std::allocator<T> {
     using is_always_equal = typename AllocDescriptor::is_always_equal;
     using propagate_on_container_move_assignment =
         typename AllocDescriptor::propagate_on_container_move_assignment;
-    using operator_eq = typename AllocDescriptor::operator_eq;
+    using operator_eq                 = typename AllocDescriptor::operator_eq;
+    using propagate_on_container_swap = typename AllocDescriptor::propagate_on_container_swap;
 
     typedef T*       pointer;
     typedef const T* const_pointer;

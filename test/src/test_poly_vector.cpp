@@ -477,15 +477,33 @@ TEST_CASE("get_allocator fetches the allocator used by the container", "[poly_ve
     REQUIRE(v.get_allocator() == estd::poly_vector<Interface>::allocator_type());
 }
 
-using D2 = custom::AllocatorDescriptor<std::false_type, std::false_type, std::true_type>;
-using D4 = custom::AllocatorDescriptor<std::false_type, std::true_type, std::true_type>;
-using D5 = custom::AllocatorDescriptor<std::true_type, std::false_type, std::false_type>;
-using D6 = custom::AllocatorDescriptor<std::true_type, std::false_type, std::true_type>;
-using D7 = custom::AllocatorDescriptor<std::true_type, std::true_type, std::false_type>;
-using D8 = custom::AllocatorDescriptor<std::true_type, std::true_type, std::true_type>;
+using D1 = custom::AllocatorDescriptor<std::false_type, std::false_type, std::true_type,
+    std::false_type>;
+using D2
+    = custom::AllocatorDescriptor<std::false_type, std::false_type, std::true_type, std::true_type>;
+using D3
+    = custom::AllocatorDescriptor<std::false_type, std::true_type, std::true_type, std::false_type>;
+using D4
+    = custom::AllocatorDescriptor<std::false_type, std::true_type, std::true_type, std::true_type>;
+using D5 = custom::AllocatorDescriptor<std::true_type, std::false_type, std::false_type,
+    std::false_type>;
+using D6
+    = custom::AllocatorDescriptor<std::true_type, std::false_type, std::false_type, std::true_type>;
+using D7
+    = custom::AllocatorDescriptor<std::true_type, std::false_type, std::true_type, std::false_type>;
+using D8
+    = custom::AllocatorDescriptor<std::true_type, std::false_type, std::true_type, std::true_type>;
+using D9
+    = custom::AllocatorDescriptor<std::true_type, std::true_type, std::false_type, std::false_type>;
+using D10
+    = custom::AllocatorDescriptor<std::true_type, std::true_type, std::false_type, std::true_type>;
+using D11
+    = custom::AllocatorDescriptor<std::true_type, std::true_type, std::true_type, std::false_type>;
+using D12
+    = custom::AllocatorDescriptor<std::true_type, std::true_type, std::true_type, std::true_type>;
 
 TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_basic_tests]",
-    AllocD, D2, D4, D5, D6, D7, D8)
+    AllocD, D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12)
 {
     using Allocator   = custom::Allocator<Interface, AllocD>;
     using poly_vector = estd::poly_vector<Interface, Allocator>;
