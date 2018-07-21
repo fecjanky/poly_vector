@@ -201,39 +201,7 @@ namespace poly_vector_impl {
             return copy_assign_impl(a, propagate_on_container_copy_assignment {});
         }
 
-        allocator_base& operator=(allocator_base&& a) noexcept(
-            propagate_on_container_move_assignment::value || allocator_is_always_equal::value)
-        {
-            return move_assign_impl(std::move(a), propagate_on_container_move_assignment {},
-                allocator_is_always_equal {});
-        }
-
-        allocator_base& move_assign_impl(allocator_base&& a, std::true_type, ...) noexcept
-        {
-            using std::swap;
-            tidy();
-            if (propagate_on_container_move_assignment::value) {
-                // must not throw
-                get_allocator_ref() = std::move(a.get_allocator_ref());
-            }
-            swap(a._storage, _storage);
-            swap(a._end_storage, _end_storage);
-            return *this;
-        }
-
-        allocator_base& move_assign_impl(
-            allocator_base&& a, std::false_type, std::true_type) noexcept
-        {
-            return move_assign_impl(std::move(a), std::true_type {});
-        }
-
-        allocator_base& move_assign_impl(allocator_base&& a, std::false_type, std::false_type)
-        {
-            if (get_allocator_ref() != a.get_allocator_ref())
-                return copy_assign_impl(a, std::false_type {});
-            else
-                return move_assign_impl(std::move(a), std::true_type {});
-        }
+        allocator_base& operator=(allocator_base&& a) = delete;
 
         allocator_base& copy_assign_impl(const allocator_base& a, std::true_type)
         {
@@ -262,19 +230,22 @@ namespace poly_vector_impl {
 
         void swap(allocator_base& x) noexcept
         {
+            // if (!propagate_on_container_swap::value && !allocator_is_always_equal::value
+            //    && get_allocator_ref() != x.get_allocator_ref()) -> Undefined behavior!!!
+            swap_with_propagate(x, propagate_on_container_swap {});
+        }
+
+        template <typename Propagate>
+        void swap_with_propagate(allocator_base& x, Propagate) noexcept
+        {
             using std::swap;
-            if (propagate_on_container_swap::value) {
+            if (Propagate::value) {
                 swap(get_allocator_ref(), x.get_allocator_ref());
-            } else if (!allocator_is_always_equal::value
-                && get_allocator_ref() != x.get_allocator_ref()) {
-#ifndef POLY_VECTOR_COVERAGE_BUILD
-                // Undefined behavior, no assertion in coverage build
-                assert(0);
-#endif
             }
             swap(_storage, x._storage);
             swap(_end_storage, x._end_storage);
         }
+
         void allocate(size_t n)
         {
             auto s = get_allocator_ref().allocate(n);
@@ -710,7 +681,6 @@ public:
     using const_iterator            = poly_vector_iterator<elem_ptr const>;
     using reverse_iterator          = std::reverse_iterator<iterator>;
     using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
-    using move_is_noexcept_t        = std::is_nothrow_move_assignable<my_base>;
     using cloning_policy_traits     = poly_vector_impl::cloning_policy_traits<CloningPolicy,
         interface_type, interface_allocator_type>;
     using interface_type_noexcept_movable = typename cloning_policy_traits::noexcept_movable;
@@ -734,7 +704,7 @@ public:
     ~poly_vector();
 
     poly_vector& operator=(const poly_vector& rhs);
-    poly_vector& operator=(poly_vector&& rhs) noexcept(move_is_noexcept_t::value);
+    poly_vector& operator=(poly_vector&& rhs) noexcept;
     ///////////////////////////////////////////////
     // Modifiers
     ///////////////////////////////////////////////
@@ -833,19 +803,18 @@ private:
 
     void init_layout(size_t storage_size, size_t capacity, size_t align_max = default_alignement);
 
-    my_base&               base() noexcept;
-    const my_base&         base() const noexcept;
-    static poly_copy_descr poly_uninitialized_copy(my_base& a, void_pointer dst,
-        elem_ptr_const_pointer begin, elem_ptr_const_pointer free, elem_ptr_const_pointer end,
-        size_t max_align);
-    static poly_copy_descr poly_uninitialized_move(my_base& a, void_pointer dst,
-        elem_ptr_const_pointer begin, elem_ptr_const_pointer free, elem_ptr_const_pointer end,
-        size_t max_align) noexcept;
-    poly_vector&           copy_assign_impl(const poly_vector& rhs);
-    poly_vector&           move_assign_impl(poly_vector&& rhs, std::true_type) noexcept;
-    poly_vector&           move_assign_impl(poly_vector&& rhs, std::false_type);
-    void                   tidy() noexcept;
-    void                   destroy_elem(elem_ptr_pointer p) noexcept;
+    my_base&                              base() noexcept;
+    const my_base&                        base() const noexcept;
+    static poly_copy_descr                poly_uninitialized_copy(my_base& a, void_pointer dst,
+                       elem_ptr_const_pointer begin, elem_ptr_const_pointer free, elem_ptr_const_pointer end,
+                       size_t max_align);
+    static poly_copy_descr                poly_uninitialized_move(my_base& a, void_pointer dst,
+                       elem_ptr_const_pointer begin, elem_ptr_const_pointer free, elem_ptr_const_pointer end,
+                       size_t max_align) noexcept;
+    poly_vector&                          copy_assign_impl(const poly_vector& rhs);
+    poly_vector&                          move_assign_impl(poly_vector&& rhs) noexcept;
+    void                                  tidy() noexcept;
+    void                                  destroy_elem(elem_ptr_pointer p) noexcept;
     std::pair<void_pointer, void_pointer> destroy_range(
         elem_ptr_pointer first, elem_ptr_pointer last) noexcept;
     iterator erase_internal_range(elem_ptr_pointer first, elem_ptr_pointer last);
@@ -936,11 +905,10 @@ inline poly_vector<I, A, C>& poly_vector<I, A, C>::operator=(const poly_vector& 
 }
 
 template <class I, class A, class C>
-inline poly_vector<I, A, C>& poly_vector<I, A, C>::operator=(poly_vector&& rhs) noexcept(
-    move_is_noexcept_t::value)
+inline poly_vector<I, A, C>& poly_vector<I, A, C>::operator=(poly_vector&& rhs) noexcept
 {
     if (this != &rhs) {
-        move_assign_impl(std::move(rhs), move_is_noexcept_t {});
+        move_assign_impl(std::move(rhs));
     }
     return *this;
 }
@@ -1341,24 +1309,14 @@ inline auto poly_vector<I, A, C>::copy_assign_impl(const poly_vector& rhs) -> po
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::move_assign_impl(poly_vector&& rhs, std::true_type) noexcept
-    -> poly_vector&
+inline auto poly_vector<I, A, C>::move_assign_impl(poly_vector&& rhs) noexcept -> poly_vector&
 {
     using std::swap;
-    base().swap(rhs.base());
+    base().swap_with_propagate(
+        rhs.base(), typename my_base::propagate_on_container_move_assignment {});
     swap_ptrs(std::move(rhs));
     swap(_align_max, rhs._align_max);
     return *this;
-}
-
-template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::move_assign_impl(poly_vector&& rhs, std::false_type)
-    -> poly_vector&
-{
-    if (base().get_allocator_ref() == rhs.base().get_allocator_ref()) {
-        return move_assign_impl(std::move(rhs), std::true_type {});
-    } else
-        return copy_assign_impl(rhs);
 }
 
 template <class I, class A, class C> inline void poly_vector<I, A, C>::tidy() noexcept
