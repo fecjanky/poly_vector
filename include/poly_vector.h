@@ -306,9 +306,11 @@ namespace poly_vector_impl {
     template <class Policy, class Interface, class Allocator> struct cloning_policy_traits {
         static_assert(is_cloning_policy<Policy, Interface, Allocator>::value,
             "Policy is not a cloning policy");
-        using pointer        = typename Policy::pointer;
-        using void_pointer   = typename Policy::void_pointer;
-        using allocator_type = Allocator;
+        using allocator_type   = Allocator;
+        using allocator_traits = std::allocator_traits<allocator_type>;
+        using pointer          = typename allocator_traits::pointer;
+        using void_pointer     = typename allocator_traits::void_pointer;
+
         using policy_impl
             = ::estd::poly_vector_impl::is_cloning_policy_impl<Policy, Interface, allocator_type>;
         using has_move_t       = typename policy_impl::has_move_t;
@@ -346,11 +348,39 @@ template <class IF, class Allocator = std::allocator<IF>,
     class CloningPolicy = delegate_cloning_policy<IF, Allocator>>
 class poly_vector;
 
-template <class CloningPolicy> struct poly_vector_elem_ptr : private CloningPolicy {
-    using void_pointer  = typename CloningPolicy::void_pointer;
-    using pointer       = typename CloningPolicy::pointer;
-    using const_pointer = typename CloningPolicy::const_pointer;
-    using value_type    = typename std::pointer_traits<pointer>::element_type;
+template <typename CP, typename Constructible> struct CloningPolicyHolder : public CP {
+    CloningPolicyHolder()                           = default;
+    CloningPolicyHolder(const CloningPolicyHolder&) = default;
+    template <typename T> explicit CloningPolicyHolder(type_tag<T>) noexcept {}
+};
+
+template <typename CP> struct CloningPolicyHolder<CP, std::true_type> : public CP {
+    CloningPolicyHolder()                           = default;
+    CloningPolicyHolder(const CloningPolicyHolder&) = default;
+    template <typename T>
+    explicit CloningPolicyHolder(type_tag<T> t) noexcept
+        : CP(t)
+    {
+    }
+};
+
+template <class CloningPolicy, class AllocatorTraits>
+struct poly_vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
+                                  typename std::is_constructible<CloningPolicy,
+                                      type_tag<typename AllocatorTraits::value_type>>::type> {
+    using void_pointer  = typename AllocatorTraits::void_pointer;
+    using pointer       = typename AllocatorTraits::pointer;
+    using const_pointer = typename AllocatorTraits::const_pointer;
+    using value_type    = typename AllocatorTraits::value_type;
+
+    using base = CloningPolicyHolder<CloningPolicy,
+        typename std::is_constructible<CloningPolicy, type_tag<value_type>>::type>;
+
+    template <typename T>
+    using forward_tag_t = typename std::is_constructible<CloningPolicy, T>::type;
+
+    template <typename T>
+    using forward_tag = typename std::conditional<forward_tag_t<T>::value, type_tag<T>, void>::type;
 
     using size_descr_t = std::pair<size_t, size_t>;
     using size_func_t  = size_descr_t();
@@ -365,11 +395,12 @@ template <class CloningPolicy> struct poly_vector_elem_ptr : private CloningPoli
         typename = std::enable_if_t<std::is_base_of<value_type, std::decay_t<T>>::value>>
     explicit poly_vector_elem_ptr(
         type_tag<T> t, void_pointer s = nullptr, pointer i = nullptr) noexcept
-        : CloningPolicy(t)
+        : base(t)
         , ptr { s, i }
         , sf { poly_vector_elem_ptr::size_func<std::decay_t<T>>() }
     {
     }
+
     poly_vector_elem_ptr(const poly_vector_elem_ptr& other) noexcept
         : CloningPolicy(other.policy())
         , ptr { other.ptr }
@@ -408,27 +439,25 @@ private:
     size_descr_t sf;
 };
 
-template <class C> void swap(poly_vector_elem_ptr<C>& lhs, poly_vector_elem_ptr<C>& rhs) noexcept
+template <class C, class A>
+void swap(poly_vector_elem_ptr<C, A>& lhs, poly_vector_elem_ptr<C, A>& rhs) noexcept
 {
     lhs.swap(rhs);
 }
 
-template <class IF, class Allocator = std::allocator<IF>> struct virtual_cloning_policy {
-    static constexpr bool nem
-        = noexcept(std::declval<IF*>()->move(std::declval<Allocator>(), std::declval<void*>()));
-    using noexcept_movable = std::integral_constant<bool, nem>;
-    using void_pointer     = typename std::allocator_traits<Allocator>::void_pointer;
-    using pointer          = typename std::allocator_traits<Allocator>::pointer;
-    using const_pointer    = typename std::allocator_traits<Allocator>::const_pointer;
-    using allocator_type   = Allocator;
+struct virtual_cloning_policy {
 
     virtual_cloning_policy() = default;
-    template <typename T> virtual_cloning_policy(type_tag<T>) {};
-    pointer clone(const Allocator& a, pointer obj, void_pointer dest) const
+
+    template <typename Allocator, typename Pointer, typename VoidPointer>
+    Pointer clone(const Allocator& a, Pointer obj, VoidPointer dest) const
     {
         return obj->clone(a, dest);
     }
-    pointer move(const Allocator& a, pointer obj, void_pointer dest) const noexcept(nem)
+
+    template <typename Allocator, typename Pointer, typename VoidPointer>
+    Pointer move(const Allocator& a, Pointer obj, VoidPointer dest) const noexcept(noexcept(
+        std::declval<Pointer>()->move(std::declval<Allocator>(), std::declval<VoidPointer>())))
     {
         return obj->move(a, dest);
     }
@@ -676,12 +705,12 @@ public:
     using const_void_pointer        = typename my_base::const_void_pointer;
     using size_type                 = std::size_t;
     using cloning_policy            = CloningPolicy;
-    using elem_ptr                  = poly_vector_elem_ptr<cloning_policy>;
-    using iterator                  = poly_vector_iterator<elem_ptr>;
-    using const_iterator            = poly_vector_iterator<elem_ptr const>;
-    using reverse_iterator          = std::reverse_iterator<iterator>;
-    using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
-    using cloning_policy_traits     = poly_vector_impl::cloning_policy_traits<CloningPolicy,
+    using elem_ptr               = poly_vector_elem_ptr<cloning_policy, interface_allocator_traits>;
+    using iterator               = poly_vector_iterator<elem_ptr>;
+    using const_iterator         = poly_vector_iterator<elem_ptr const>;
+    using reverse_iterator       = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+    using cloning_policy_traits  = poly_vector_impl::cloning_policy_traits<CloningPolicy,
         interface_type, interface_allocator_type>;
     using interface_type_noexcept_movable = typename cloning_policy_traits::noexcept_movable;
 

@@ -595,7 +595,7 @@ TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_b
 }
 
 TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy,
-    estd::virtual_cloning_policy<Interface>, estd::delegate_cloning_policy<Interface>)
+    estd::virtual_cloning_policy, estd::delegate_cloning_policy<Interface>)
 {
     using vector = estd::poly_vector<Interface, std::allocator<Interface>, CloningPolicy>;
 

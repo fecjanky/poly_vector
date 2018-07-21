@@ -179,7 +179,7 @@ private:
     int                                                               pad[32];
 };
 
-using Impl2 = Impl2T<estd::virtual_cloning_policy<Interface>>;
+using Impl2 = Impl2T<estd::virtual_cloning_policy>;
 
 namespace custom {
 struct CustInterface;
