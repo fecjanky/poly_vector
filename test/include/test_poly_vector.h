@@ -250,7 +250,8 @@ template <class IF, class Allocator = std::allocator<IF>> struct CustomCloningPo
 using CustomCloningPolicy = CustomCloningPolicyT<CustInterface>;
 
 template <typename T> struct Allocator : public std::allocator<T> {
-    using is_always_equal = std::false_type;
+    using is_always_equal                        = std::false_type;
+    using propagate_on_container_move_assignment = std::false_type;
     typedef T*       pointer;
     typedef const T* const_pointer;
     typedef T        value_type;

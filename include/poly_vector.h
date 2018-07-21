@@ -75,10 +75,11 @@ namespace poly_vector_impl {
         template <typename AA>
         static std::true_type  has_always_equal_test(const AA&, typename AA::is_always_equal*);
         static std::false_type has_always_equal_test(...);
-        static constexpr bool  has_always_equal = std::is_same<std::true_type,
-            decltype(has_always_equal_test(std::declval<A>(), nullptr))>::value;
 
     public:
+        static constexpr bool has_always_equal = std::is_same<std::true_type,
+            decltype(has_always_equal_test(std::declval<A>(), nullptr))>::value;
+
         using type                  = typename select_always_eq_trait<A, has_always_equal>::type;
         static constexpr bool value = type::value;
     };

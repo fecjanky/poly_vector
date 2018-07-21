@@ -7,6 +7,7 @@ project(poly_vector_test CXX)
 set(SRC
         src/main.cpp
         src/test_poly_vector.cpp
+		src/test_poly_vector_meta.cpp
 )
 
 if (MSVC)
