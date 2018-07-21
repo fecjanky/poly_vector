@@ -477,9 +477,18 @@ TEST_CASE("get_allocator fetches the allocator used by the container", "[poly_ve
     REQUIRE(v.get_allocator() == estd::poly_vector<Interface>::allocator_type());
 }
 
-TEST_CASE("basic operations when using custom allocator", "[poly_vector_basic_tests]")
+using D2 = custom::AllocatorDescriptor<std::false_type, std::false_type, std::true_type>;
+using D4 = custom::AllocatorDescriptor<std::false_type, std::true_type, std::true_type>;
+using D5 = custom::AllocatorDescriptor<std::true_type, std::false_type, std::false_type>;
+using D6 = custom::AllocatorDescriptor<std::true_type, std::false_type, std::true_type>;
+using D7 = custom::AllocatorDescriptor<std::true_type, std::true_type, std::false_type>;
+using D8 = custom::AllocatorDescriptor<std::true_type, std::true_type, std::true_type>;
+
+TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_basic_tests]",
+    AllocD, D2, D4, D5, D6, D7, D8)
 {
-    using poly_vector = estd::poly_vector<Interface, custom::Allocator<Interface>>;
+    using Allocator   = custom::Allocator<Interface, AllocD>;
+    using poly_vector = estd::poly_vector<Interface, Allocator>;
     poly_vector v;
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());

@@ -250,9 +250,21 @@ template <class IF, class Allocator = std::allocator<IF>> struct CustomCloningPo
 
 using CustomCloningPolicy = CustomCloningPolicyT<CustInterface>;
 
-template <typename T> struct Allocator : private std::allocator<T> {
-    using is_always_equal                        = std::false_type;
-    using propagate_on_container_move_assignment = std::false_type;
+template <typename always_eq, typename propagate, typename opeq> struct AllocatorDescriptor {
+    using is_always_equal                        = always_eq;
+    using propagate_on_container_move_assignment = propagate;
+    using operator_eq                            = opeq;
+};
+
+template <typename T,
+    typename AllocDescriptor
+    = AllocatorDescriptor<std::false_type, std::false_type, std::true_type>>
+struct Allocator : private std::allocator<T> {
+    using is_always_equal = typename AllocDescriptor::is_always_equal;
+    using propagate_on_container_move_assignment =
+        typename AllocDescriptor::propagate_on_container_move_assignment;
+    using operator_eq = typename AllocDescriptor::operator_eq;
+
     typedef T*       pointer;
     typedef const T* const_pointer;
     typedef T        value_type;
@@ -262,11 +274,11 @@ template <typename T> struct Allocator : private std::allocator<T> {
     Allocator(const Allocator&) = default;
 
     template <typename U> struct rebind {
-        using other = Allocator<U>;
+        using other = Allocator<U, AllocDescriptor>;
     };
 
     template <typename U, typename = std::enable_if_t<!std::is_same<U, T>::value>>
-    Allocator(Allocator<U> const& b)
+    Allocator(Allocator<U, AllocDescriptor> const& b)
         : std::allocator<T>(b.get_allocator())
     {
     }
@@ -274,11 +286,17 @@ template <typename T> struct Allocator : private std::allocator<T> {
     pointer allocate(size_t n) { return get_allocator().allocate(n); }
     void    deallocate(pointer ptr, size_t n) { get_allocator().deallocate(ptr, n); }
 
-    bool operator==(Allocator const& rhs) const { return true; }
-    bool operator!=(Allocator const& rhs) const { return false; }
+    bool operator==(Allocator const& rhs) const
+    {
+        return is_always_equal::value || operator_eq::value;
+    }
+    bool operator!=(Allocator const& rhs) const { return !(*this == rhs); }
 
-    std::allocator<T>& get_allocator() { return static_cast<std::allocator<T>&>(*this); }
-    std::allocator<T> const& get_allocator() const { return static_cast<std::allocator<T> const&>(*this); }
+    std::allocator<T>&       get_allocator() { return static_cast<std::allocator<T>&>(*this); }
+    std::allocator<T> const& get_allocator() const
+    {
+        return static_cast<std::allocator<T> const&>(*this);
+    }
 };
 
 }
