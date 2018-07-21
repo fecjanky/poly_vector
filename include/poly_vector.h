@@ -239,7 +239,7 @@ namespace poly_vector_impl {
         void swap_with_propagate(allocator_base& x, Propagate) noexcept
         {
             using std::swap;
-            if (Propagate::value) {
+            /*constexpr*/ if (Propagate::value) {
                 swap(get_allocator_ref(), x.get_allocator_ref());
             }
             swap(_storage, x._storage);
@@ -339,7 +339,7 @@ namespace poly_vector_impl {
 } // namespace poly_vector_impl
 
 template <class Interface, class Allocator = std::allocator<Interface>,
-    typename NoExceptmovable = std::true_type>
+    typename Interface_Is_NoExcept_Movable = std::true_type>
 struct delegate_cloning_policy;
 
 template <class IF, class Allocator = std::allocator<IF>,
@@ -402,7 +402,7 @@ struct poly_vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
     }
 
     poly_vector_elem_ptr(const poly_vector_elem_ptr& other) noexcept
-        : CloningPolicy(other.policy())
+        : base(other)
         , ptr { other.ptr }
         , sf { other.sf }
     {
@@ -447,8 +447,6 @@ void swap(poly_vector_elem_ptr<C, A>& lhs, poly_vector_elem_ptr<C, A>& rhs) noex
 
 struct virtual_cloning_policy {
 
-    virtual_cloning_policy() = default;
-
     template <typename Allocator, typename Pointer, typename VoidPointer>
     Pointer clone(const Allocator& a, Pointer obj, VoidPointer dest) const
     {
@@ -467,26 +465,20 @@ struct no_cloning_exception : public std::exception {
     const char* what() const noexcept override { return "cloning attempt with no_cloning_policy"; }
 };
 
-template <class IF, class Allocator = std::allocator<IF>> struct no_cloning_policy {
-    using noexcept_movable = std::false_type;
-    using void_pointer     = typename std::allocator_traits<Allocator>::void_pointer;
-    using pointer          = typename std::allocator_traits<Allocator>::pointer;
-    using const_pointer    = typename std::allocator_traits<Allocator>::pointer;
-    using allocator_type   = Allocator;
-    no_cloning_policy()    = default;
-    template <typename T> no_cloning_policy(type_tag<T>) {};
-    pointer clone(const Allocator& a, pointer obj, void_pointer dest) const
+struct no_cloning_policy {
+    template <typename Allocator, typename Pointer, typename VoidPointer>
+    Pointer clone(const Allocator& a, Pointer obj, VoidPointer dest) const
     {
         throw no_cloning_exception {};
     }
 };
 
-template <class Interface, class Allocator, typename NoExceptmovable>
+template <class Interface, class Allocator, typename Interface_Is_NoExcept_Movable>
 struct delegate_cloning_policy {
     enum Operation { Clone, Move };
 
     typedef Interface* (*clone_func_t)(const Allocator& a, Interface* obj, void* dest, Operation);
-    using noexcept_movable = NoExceptmovable;
+    using noexcept_movable = Interface_Is_NoExcept_Movable;
     using void_pointer     = typename std::allocator_traits<Allocator>::void_pointer;
     using pointer          = typename std::allocator_traits<Allocator>::pointer;
     using const_pointer    = typename std::allocator_traits<Allocator>::const_pointer;
@@ -1395,12 +1387,12 @@ inline auto poly_vector<I, A, C>::erase_internal_range(
                 last->policy(), base().get_allocator_ref(), last->ptr.second, free_range.first);
             base().destroy(last->ptr.second);
             swap(*first, *last);
-            first->ptr              = std::make_pair(free_range.first, clone);
-            const auto next_storage = [](void_pointer p, size_type s, size_t a) {
-                return next_aligned_storage(static_cast<pointer>(p) + s, a);
-            };
-            free_range = std::make_pair(next_storage(free_range.first, first->size(), _align_max),
-                next_storage(free_range.second, first->size(), _align_max));
+            first->ptr = std::make_pair(free_range.first, clone);
+            free_range = std::make_pair(
+                next_aligned_storage(
+                    static_cast<pointer>(free_range.first) + first->size(), _align_max),
+                next_aligned_storage(
+                    static_cast<pointer>(free_range.second) + first->size(), _align_max));
         } catch (...) {
             destroy_range(last, end_elem());
             _free_elem = first;

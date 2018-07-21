@@ -283,8 +283,7 @@ TEST_CASE("if reserving too much lenght error is thrown", "[poly_vector_basic_te
 
 TEST_CASE("is_not_copyable_with_no_cloning_policy", "[poly_vector_basic_tests]")
 {
-    estd::poly_vector<Interface, std::allocator<Interface>, estd::no_cloning_policy<Interface>>
-        v {};
+    estd::poly_vector<Interface, std::allocator<Interface>, estd::no_cloning_policy> v {};
     v.reserve(2, std::max(sizeof(Impl1), sizeof(Impl2)), std::max(alignof(Impl1), alignof(Impl2)));
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
@@ -308,8 +307,7 @@ TEST_CASE("objects_are_allocated_with_proper_alignment", "[poly_vector_basic_tes
 
 TEST_CASE("no_cloning_policy_gives_e_what", "[poly_vector_basic_tests]")
 {
-    estd::poly_vector<Interface, std::allocator<Interface>, estd::no_cloning_policy<Interface>>
-        v {};
+    estd::poly_vector<Interface, std::allocator<Interface>, estd::no_cloning_policy> v {};
     v.reserve(1, sizeof(Impl1));
     v.push_back(Impl1(3.14));
 

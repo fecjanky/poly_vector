@@ -239,7 +239,7 @@ template <class IF, class Allocator = std::allocator<IF>> struct CustomCloningPo
     using const_pointer    = typename std::allocator_traits<Allocator>::const_pointer;
     using allocator_type   = Allocator;
     CustomCloningPolicyT() = default;
-    template <typename T> CustomCloningPolicyT(estd::type_tag<T>) {};
+
     pointer clone(const Allocator& a, pointer obj, void_pointer dest) const
     {
         CloneVisitor v(dest);
