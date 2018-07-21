@@ -250,13 +250,34 @@ template <class IF, class Allocator = std::allocator<IF>> struct CustomCloningPo
 
 using CustomCloningPolicy = CustomCloningPolicyT<CustInterface>;
 
-template <typename T> struct Allocator : public std::allocator<T> {
+template <typename T> struct Allocator : private std::allocator<T> {
     using is_always_equal                        = std::false_type;
     using propagate_on_container_move_assignment = std::false_type;
     typedef T*       pointer;
     typedef const T* const_pointer;
     typedef T        value_type;
     using std::allocator<T>::allocator;
+
+    Allocator()                 = default;
+    Allocator(const Allocator&) = default;
+
+    template <typename U> struct rebind {
+        using other = Allocator<U>;
+    };
+
+    template <typename U, typename = std::enable_if_t<!std::is_same<U, T>::value>>
+    Allocator(Allocator<U> const& b)
+        : std::allocator<T>(b)
+    {
+    }
+
+    pointer allocate(size_t n) { return get_allocator().allocate(n); }
+    void    deallocate(pointer ptr, size_t n) { get_allocator().deallocate(ptr, n); }
+
+    bool operator==(Allocator const& rhs) const { return true; }
+    bool operator!=(Allocator const& rhs) const { return false; }
+
+    std::allocator<T>& get_allocator() { return static_cast<std::allocator<T>&>(*this); }
 };
 
 }

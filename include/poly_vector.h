@@ -677,27 +677,28 @@ public:
     ///////////////////////////////////////////////
     using allocator_type =
         typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
-    using interface_allocator_type        = Allocator;
-    using my_base                         = poly_vector_impl::allocator_base<allocator_type>;
-    using interface_type                  = std::decay_t<IF>;
-    using interface_pointer               = typename interface_allocator_type ::pointer;
-    using const_interface_pointer         = typename interface_allocator_type ::const_pointer;
-    using interface_reference             = typename interface_allocator_type::reference;
-    using const_interface_reference       = typename interface_allocator_type::const_reference;
-    using allocator_traits                = std::allocator_traits<allocator_type>;
-    using pointer                         = typename my_base::pointer;
-    using const_pointer                   = typename my_base::const_pointer;
-    using void_pointer                    = typename my_base::void_pointer;
-    using const_void_pointer              = typename my_base::const_void_pointer;
-    using size_type                       = std::size_t;
-    using cloning_policy                  = CloningPolicy;
-    using elem_ptr                        = poly_vector_elem_ptr<cloning_policy>;
-    using iterator                        = poly_vector_iterator<elem_ptr>;
-    using const_iterator                  = poly_vector_iterator<elem_ptr const>;
-    using reverse_iterator                = std::reverse_iterator<iterator>;
-    using const_reverse_iterator          = std::reverse_iterator<const_iterator>;
-    using move_is_noexcept_t              = std::is_nothrow_move_assignable<my_base>;
-    using cloning_policy_traits           = poly_vector_impl::cloning_policy_traits<CloningPolicy,
+    using interface_allocator_type   = Allocator;
+    using interface_allocator_traits = std::allocator_traits<interface_allocator_type>;
+    using allocator_traits           = std::allocator_traits<allocator_type>;
+    using my_base                    = poly_vector_impl::allocator_base<allocator_type>;
+    using interface_type             = std::decay_t<IF>;
+    using interface_pointer          = typename interface_allocator_traits::pointer;
+    using const_interface_pointer    = typename interface_allocator_traits::const_pointer;
+    using interface_reference        = std::add_lvalue_reference_t<interface_type>;
+    using const_interface_reference = std::add_lvalue_reference_t<std::add_const_t<interface_type>>;
+    using pointer                   = typename my_base::pointer;
+    using const_pointer             = typename my_base::const_pointer;
+    using void_pointer              = typename my_base::void_pointer;
+    using const_void_pointer        = typename my_base::const_void_pointer;
+    using size_type                 = std::size_t;
+    using cloning_policy            = CloningPolicy;
+    using elem_ptr                  = poly_vector_elem_ptr<cloning_policy>;
+    using iterator                  = poly_vector_iterator<elem_ptr>;
+    using const_iterator            = poly_vector_iterator<elem_ptr const>;
+    using reverse_iterator          = std::reverse_iterator<iterator>;
+    using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
+    using move_is_noexcept_t        = std::is_nothrow_move_assignable<my_base>;
+    using cloning_policy_traits     = poly_vector_impl::cloning_policy_traits<CloningPolicy,
         interface_type, interface_allocator_type>;
     using interface_type_noexcept_movable = typename cloning_policy_traits::noexcept_movable;
 
