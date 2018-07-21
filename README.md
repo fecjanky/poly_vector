@@ -26,7 +26,7 @@ target_link_libraries(MyExecutable PolyVector)
 Given a class hierarchy as illustrated by the figure below:
 
 ![](doc/images/demo_hierarchy.png)
-*```Example class hierarchy*
+*Class hierarchy example*
 
 
 One can store implementations of Interface interface in a ```poly_vector<Interface>``` container
