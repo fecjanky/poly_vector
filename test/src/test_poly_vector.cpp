@@ -532,6 +532,21 @@ TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_b
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[3]));
     }
 
+    SECTION("when vector is copy constructed")
+    {
+        poly_vector v_m = v;
+        REQUIRE(v_m.size() == old_size);
+        REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v_m[0]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[1]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v_m[2]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[3]));
+        REQUIRE(v.size() == old_size);
+        REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v[0]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v[1]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v[2]));
+        REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v[3]));
+    }
+
     SECTION("when vector is move assigned")
     {
         poly_vector v_m;
@@ -546,6 +561,36 @@ TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_b
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[1]));
         REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v_m[2]));
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[3]));
+    }
+
+    SECTION("when vector is copy assigned")
+    {
+        poly_vector v_m;
+        v_m.push_back(Impl1(3.14));
+        v_m.push_back(Impl2());
+        v_m.push_back(Impl1(3.14));
+
+        v_m = v;
+
+        REQUIRE(v.size() == v_m.size());
+        REQUIRE(v[0] == v_m[0]);
+        REQUIRE(v[1] == v_m[1]);
+        REQUIRE(v[2] == v_m[2]);
+        REQUIRE(v[3] == v_m[3]);
+    }
+
+    SECTION("when vector is move assigned from empty vec")
+    {
+        poly_vector v_empty;
+        v = std::move(v_empty);
+        REQUIRE(v.empty());
+    }
+
+    SECTION("when vector is copy assigned from empty vec")
+    {
+        poly_vector v_empty;
+        v = v_empty;
+        REQUIRE(v.size() == v_empty.size());
     }
 }
 
