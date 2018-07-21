@@ -1342,7 +1342,9 @@ inline auto poly_vector<I, A, C>::move_assign_impl(poly_vector&& rhs, std::true_
     -> poly_vector&
 {
     using std::swap;
-    base().swap(rhs.base());
+    tidy();
+    base() = std::move(rhs.base());
+    // base().swap(rhs.base());
     swap_ptrs(std::move(rhs));
     swap(_align_max, rhs._align_max);
     return *this;
