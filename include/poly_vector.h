@@ -715,6 +715,7 @@ public:
     poly_vector();
     explicit poly_vector(const allocator_type& alloc);
     poly_vector(const poly_vector& other);
+    // TODO: exception specification missing
     poly_vector(poly_vector&& other);
     ~poly_vector();
 
