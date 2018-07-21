@@ -477,33 +477,41 @@ TEST_CASE("get_allocator fetches the allocator used by the container", "[poly_ve
     REQUIRE(v.get_allocator() == estd::poly_vector<Interface>::allocator_type());
 }
 
-using D1 = custom::AllocatorDescriptor<std::false_type, std::false_type, std::true_type,
-    std::false_type>;
-using D2
-    = custom::AllocatorDescriptor<std::false_type, std::false_type, std::true_type, std::true_type>;
-using D3
-    = custom::AllocatorDescriptor<std::false_type, std::true_type, std::true_type, std::false_type>;
-using D4
-    = custom::AllocatorDescriptor<std::false_type, std::true_type, std::true_type, std::true_type>;
-using D5 = custom::AllocatorDescriptor<std::true_type, std::false_type, std::false_type,
-    std::false_type>;
-using D6
-    = custom::AllocatorDescriptor<std::true_type, std::false_type, std::false_type, std::true_type>;
-using D7
-    = custom::AllocatorDescriptor<std::true_type, std::false_type, std::true_type, std::false_type>;
-using D8
-    = custom::AllocatorDescriptor<std::true_type, std::false_type, std::true_type, std::true_type>;
-using D9
-    = custom::AllocatorDescriptor<std::true_type, std::true_type, std::false_type, std::false_type>;
-using D10
-    = custom::AllocatorDescriptor<std::true_type, std::true_type, std::false_type, std::true_type>;
-using D11
-    = custom::AllocatorDescriptor<std::true_type, std::true_type, std::true_type, std::false_type>;
-using D12
-    = custom::AllocatorDescriptor<std::true_type, std::true_type, std::true_type, std::true_type>;
+using _1 = std::true_type;
+using _0 = std::false_type;
+
+using D2  = custom::AllocatorDescriptor<_0, _0, _0, _1, _0>;
+using D3  = custom::AllocatorDescriptor<_0, _0, _0, _1, _1>;
+using D4  = custom::AllocatorDescriptor<_0, _0, _1, _0, _0>;
+using D5  = custom::AllocatorDescriptor<_0, _0, _1, _0, _1>;
+using D6  = custom::AllocatorDescriptor<_0, _0, _1, _1, _0>;
+using D7  = custom::AllocatorDescriptor<_0, _0, _1, _1, _1>;
+using D10 = custom::AllocatorDescriptor<_0, _1, _0, _1, _0>;
+using D11 = custom::AllocatorDescriptor<_0, _1, _0, _1, _1>;
+using D12 = custom::AllocatorDescriptor<_0, _1, _1, _0, _0>;
+using D13 = custom::AllocatorDescriptor<_0, _1, _1, _0, _1>;
+using D14 = custom::AllocatorDescriptor<_0, _1, _1, _1, _0>;
+using D15 = custom::AllocatorDescriptor<_0, _1, _1, _1, _1>;
+using D16 = custom::AllocatorDescriptor<_1, _0, _0, _0, _0>;
+using D17 = custom::AllocatorDescriptor<_1, _0, _0, _0, _1>;
+using D18 = custom::AllocatorDescriptor<_1, _0, _0, _1, _0>;
+using D19 = custom::AllocatorDescriptor<_1, _0, _0, _1, _1>;
+using D20 = custom::AllocatorDescriptor<_1, _0, _1, _0, _0>;
+using D21 = custom::AllocatorDescriptor<_1, _0, _1, _0, _1>;
+using D22 = custom::AllocatorDescriptor<_1, _0, _1, _1, _0>;
+using D23 = custom::AllocatorDescriptor<_1, _0, _1, _1, _1>;
+using D24 = custom::AllocatorDescriptor<_1, _1, _0, _0, _0>;
+using D25 = custom::AllocatorDescriptor<_1, _1, _0, _0, _1>;
+using D26 = custom::AllocatorDescriptor<_1, _1, _0, _1, _0>;
+using D27 = custom::AllocatorDescriptor<_1, _1, _0, _1, _1>;
+using D28 = custom::AllocatorDescriptor<_1, _1, _1, _0, _0>;
+using D29 = custom::AllocatorDescriptor<_1, _1, _1, _0, _1>;
+using D30 = custom::AllocatorDescriptor<_1, _1, _1, _1, _0>;
+using D31 = custom::AllocatorDescriptor<_1, _1, _1, _1, _1>;
 
 TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_basic_tests]",
-    AllocD, D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12)
+    AllocD, D2, D3, D4, D5, D6, D7, D10, D11, D12, D13, D14, D15, D16, D17, D18, D19, D20, D21, D22,
+    D23, D24, D25, D26, D27, D28, D29, D30, D31)
 {
     using Allocator   = custom::Allocator<Interface, AllocD>;
     using poly_vector = estd::poly_vector<Interface, Allocator>;

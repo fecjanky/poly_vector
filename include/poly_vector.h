@@ -238,11 +238,12 @@ namespace poly_vector_impl {
         allocator_base& copy_assign_impl(const allocator_base& a, std::true_type)
         {
             // Note: allocator copy assignment must not throw
-            pointer s = nullptr;
+            pointer s      = nullptr;
+            auto    a_copy = a.get_allocator_ref();
             if (a.size())
-                s = a.get_allocator_ref().allocate(a.size());
+                s = a_copy.allocate(a.size());
             tidy();
-            get_allocator_ref() = a.get_allocator_ref();
+            get_allocator_ref() = std::move(a_copy);
             _storage            = s;
             _end_storage        = s + a.size();
             return *this;
