@@ -372,9 +372,10 @@ template <class IF, class Allocator = std::allocator<IF>,
 class poly_vector;
 
 template <class CloningPolicy> struct poly_vector_elem_ptr : private CloningPolicy {
-    using void_pointer = typename CloningPolicy::void_pointer;
-    using pointer      = typename CloningPolicy::pointer;
-    using IF           = std::remove_reference_t<decltype(*std::declval<pointer>())>;
+    using void_pointer  = typename CloningPolicy::void_pointer;
+    using pointer       = typename CloningPolicy::pointer;
+    using const_pointer = typename CloningPolicy::const_pointer;
+    using value_type    = typename std::pointer_traits<pointer>::element_type;
 
     using size_descr_t = std::pair<size_t, size_t>;
     using size_func_t  = size_descr_t();
@@ -385,7 +386,8 @@ template <class CloningPolicy> struct poly_vector_elem_ptr : private CloningPoli
     {
     }
 
-    template <typename T, typename = std::enable_if_t<std::is_base_of<IF, std::decay_t<T>>::value>>
+    template <typename T,
+        typename = std::enable_if_t<std::is_base_of<value_type, std::decay_t<T>>::value>>
     explicit poly_vector_elem_ptr(
         type_tag<T> t, void_pointer s = nullptr, pointer i = nullptr) noexcept
         : CloningPolicy(t)
@@ -541,21 +543,20 @@ private:
     clone_func_t cf;
 };
 
-template <class IF, class CP>
-class poly_vector_iterator : public std::iterator<std::random_access_iterator_tag, IF> {
+template <class ElemPtrT>
+class poly_vector_iterator : public std::iterator<std::random_access_iterator_tag,
+                                 typename std::remove_const_t<ElemPtrT>::value_type> {
 public:
-    using interface_type = IF;
-    using cloning_policy = CP;
-    using p_elem         = poly_vector_elem_ptr<CP>;
-    using elem     = std::conditional_t<std::is_const<IF>::value, std::add_const_t<p_elem>, p_elem>;
-    using void_ptr = typename cloning_policy::void_pointer;
-    using pointer  = typename cloning_policy::pointer;
-    using const_pointer   = typename cloning_policy::const_pointer;
-    using reference       = decltype(*std::declval<pointer>());
-    using const_reference = decltype(*std::declval<const_pointer>());
+    using p_elem         = std::remove_const_t<ElemPtrT>;
+    using interface_type = typename p_elem::value_type;
+    using elem
+        = std::conditional_t<std::is_const<ElemPtrT>::value, std::add_const_t<p_elem>, p_elem>;
+    using pointer         = typename p_elem::pointer;
+    using const_pointer   = typename p_elem::const_pointer;
     using elem_ptr        = typename std::pointer_traits<pointer>::template rebind<elem>;
     using difference_type = typename std::pointer_traits<elem_ptr>::difference_type;
-    using value_type      = typename std::pointer_traits<elem_ptr>::element_type;
+    using reference       = std::add_lvalue_reference_t<interface_type>;
+    using const_reference = std::add_lvalue_reference_t<std::add_const_t<interface_type>>;
 
     poly_vector_iterator()
         : curr {}
@@ -567,9 +568,9 @@ public:
     }
 
     template <class T,
-        typename = std::enable_if_t<std::is_same<std::remove_const_t<IF>, T>::value
-            && !std::is_same<poly_vector_iterator, poly_vector_iterator<T, CP>>::value>>
-    poly_vector_iterator(const poly_vector_iterator<T, CP>& other)
+        typename = std::enable_if_t<std::is_same<p_elem, T>::value
+            && !std::is_same<poly_vector_iterator, poly_vector_iterator<T>>::value>>
+    poly_vector_iterator(const poly_vector_iterator<T>& other)
         : curr { other.get() }
     {
     }
@@ -640,28 +641,28 @@ private:
     elem_ptr curr;
 };
 
-template <class IF, class CP>
-void swap(poly_vector_iterator<IF, CP>& lhs, poly_vector_iterator<IF, CP>& rhs)
+template <class ElemPtrT>
+void swap(poly_vector_iterator<ElemPtrT>& lhs, poly_vector_iterator<ElemPtrT>& rhs)
 {
     lhs.swap(rhs);
 }
-template <class IF, class CP>
-poly_vector_iterator<IF, CP> operator+(
-    poly_vector_iterator<IF, CP> a, typename poly_vector_iterator<IF, CP>::difference_type n)
+template <class ElemPtrT>
+poly_vector_iterator<ElemPtrT> operator+(
+    poly_vector_iterator<ElemPtrT> a, typename poly_vector_iterator<ElemPtrT>::difference_type n)
 {
     auto temp = a;
     return a += n;
 }
-template <class IF, class CP>
-poly_vector_iterator<IF, CP> operator+(
-    typename poly_vector_iterator<IF, CP>::difference_type n, poly_vector_iterator<IF, CP> a)
+template <class ElemPtrT>
+poly_vector_iterator<ElemPtrT> operator+(
+    typename poly_vector_iterator<ElemPtrT>::difference_type n, poly_vector_iterator<ElemPtrT> a)
 {
     auto temp = a;
     return a += n;
 }
-template <class IF, class CP>
-poly_vector_iterator<IF, CP> operator-(
-    poly_vector_iterator<IF, CP> i, typename poly_vector_iterator<IF, CP>::difference_type n)
+template <class ElemPtrT>
+poly_vector_iterator<ElemPtrT> operator-(
+    poly_vector_iterator<ElemPtrT> i, typename poly_vector_iterator<ElemPtrT>::difference_type n)
 {
     auto temp = i;
     return i -= n;
@@ -676,26 +677,27 @@ public:
     ///////////////////////////////////////////////
     using allocator_type =
         typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
-    using interface_allocator_type  = Allocator;
-    using my_base                   = poly_vector_impl::allocator_base<allocator_type>;
-    using interface_type            = std::decay_t<IF>;
-    using interface_pointer         = typename interface_allocator_type ::pointer;
-    using const_interface_pointer   = typename interface_allocator_type ::const_pointer;
-    using interface_reference       = typename interface_allocator_type::reference;
-    using const_interface_reference = typename interface_allocator_type::const_reference;
-    using allocator_traits          = std::allocator_traits<allocator_type>;
-    using pointer                   = typename my_base::pointer;
-    using const_pointer             = typename my_base::const_pointer;
-    using void_pointer              = typename my_base::void_pointer;
-    using const_void_pointer        = typename my_base::const_void_pointer;
-    using size_type                 = std::size_t;
-    using cloning_policy            = CloningPolicy;
-    using iterator                  = poly_vector_iterator<interface_type, cloning_policy>;
-    using const_iterator            = poly_vector_iterator<interface_type const, cloning_policy>;
-    using reverse_iterator          = std::reverse_iterator<iterator>;
-    using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
-    using move_is_noexcept_t        = std::is_nothrow_move_assignable<my_base>;
-    using cloning_policy_traits     = poly_vector_impl::cloning_policy_traits<CloningPolicy,
+    using interface_allocator_type        = Allocator;
+    using my_base                         = poly_vector_impl::allocator_base<allocator_type>;
+    using interface_type                  = std::decay_t<IF>;
+    using interface_pointer               = typename interface_allocator_type ::pointer;
+    using const_interface_pointer         = typename interface_allocator_type ::const_pointer;
+    using interface_reference             = typename interface_allocator_type::reference;
+    using const_interface_reference       = typename interface_allocator_type::const_reference;
+    using allocator_traits                = std::allocator_traits<allocator_type>;
+    using pointer                         = typename my_base::pointer;
+    using const_pointer                   = typename my_base::const_pointer;
+    using void_pointer                    = typename my_base::void_pointer;
+    using const_void_pointer              = typename my_base::const_void_pointer;
+    using size_type                       = std::size_t;
+    using cloning_policy                  = CloningPolicy;
+    using elem_ptr                        = poly_vector_elem_ptr<cloning_policy>;
+    using iterator                        = poly_vector_iterator<elem_ptr>;
+    using const_iterator                  = poly_vector_iterator<elem_ptr const>;
+    using reverse_iterator                = std::reverse_iterator<iterator>;
+    using const_reverse_iterator          = std::reverse_iterator<const_iterator>;
+    using move_is_noexcept_t              = std::is_nothrow_move_assignable<my_base>;
+    using cloning_policy_traits           = poly_vector_impl::cloning_policy_traits<CloningPolicy,
         interface_type, interface_allocator_type>;
     using interface_type_noexcept_movable = typename cloning_policy_traits::noexcept_movable;
 
@@ -793,7 +795,6 @@ public:
 private:
     template <typename T> using type_tag = type_tag<T>;
 
-    using elem_ptr         = poly_vector_elem_ptr<cloning_policy>;
     using elem_ptr_pointer = typename allocator_traits::template rebind_traits<elem_ptr>::pointer;
     using elem_ptr_const_pointer =
         typename allocator_traits::template rebind_traits<elem_ptr>::const_pointer;
