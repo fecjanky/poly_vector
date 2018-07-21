@@ -123,7 +123,7 @@ class poly_vector;
 It has the following benefits:
 * reduced allocation count compared to ```std::vector<std::unique_ptr<Interface>>>``` based alternative
 * increased sequential access performance due to locality of references enforced by the structure automatically without the need of custom allocators
-* less typing when pushing objects into the the container
+* less typing when manipulating the container (e.g. when pushing objects into the the container no need for ```make_unique<Interface>()```)
 
 
 The storage layout differences are illustrated by the figures below:
