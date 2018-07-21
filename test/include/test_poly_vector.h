@@ -68,8 +68,9 @@ struct Interface {
         : my_id { i.my_id }
         , throw_on_copy_construction { i.throw_on_copy_construction }
     {
-        if (i.throw_on_copy_construction)
+        if (i.throw_on_copy_construction) {
             throw std::runtime_error("Interface copy attempt with throw on copy set");
+        }
     }
     Interface(Interface&& i) noexcept
         : my_id { i.my_id }
@@ -120,15 +121,16 @@ public:
     {
         cookie.set();
     }
-    void               function() override { d += 1.0; }
-    virtual Interface* clone(std::allocator<Interface>, void* dest) override
+    void       function() override { d += 1.0; }
+    Interface* clone(std::allocator<Interface> /*unused*/, void* dest) override
     {
         return new (dest) Impl1(*this);
     }
-    virtual Interface* move(std::allocator<Interface>, void* dest) override
+    Interface* move(std::allocator<Interface> /*unused*/, void* dest) override
     {
-        if (this->throw_on_copy_construction)
+        if (this->throw_on_copy_construction) {
             throw std::runtime_error("Interface copy attempt with throw on copy set");
+        }
         return new (dest) Impl1(std::move(*this));
     }
 
@@ -160,15 +162,16 @@ public:
     {
         cookie.set();
     }
-    void               function() override { v.push_back(Impl1 { 3.1 }); }
-    virtual Interface* clone(std::allocator<Interface>, void* dest) override
+    void       function() override { v.push_back(Impl1 { 3.1 }); }
+    Interface* clone(std::allocator<Interface> /*unused*/, void* dest) override
     {
         return new (dest) Impl2T(*this);
     }
-    virtual Interface* move(std::allocator<Interface>, void* dest) override
+    Interface* move(std::allocator<Interface> /*unused*/, void* dest) override
     {
-        if (this->throw_on_copy_construction)
+        if (this->throw_on_copy_construction) {
             throw std::runtime_error("Interface copy attempt with throw on copy set");
+        }
         return new (dest) Impl2T(std::move(*this));
     }
 
@@ -219,10 +222,11 @@ public:
     void visit(const CustImpl& impl) const override { ptr = new (dst) CustImpl(impl); }
     void visit(const CustOtherImpl& impl) const override { ptr = new (dst) CustOtherImpl(impl); }
 
-    ~CloneVisitor()
+    ~CloneVisitor() override
     {
-        if (ptr)
+        if (ptr) {
             ptr->~CustInterface();
+        }
     }
 
     CustInterface* release() const { return std::exchange(ptr, nullptr); }
@@ -305,4 +309,4 @@ struct Allocator : private std::allocator<T> {
     }
 };
 
-}
+} // namespace custom

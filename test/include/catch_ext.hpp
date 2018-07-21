@@ -37,7 +37,7 @@ namespace detail {
 template<template<typename> class Func>
 struct for_each_type<Func>
 {
-  static void execute(const std::string&) {}
+  static void execute(const std::string& /*unused*/) {}
 };
 
 template<template<typename> class Func, typename T, typename... Ts>
@@ -50,4 +50,4 @@ struct for_each_type<Func, T, Ts...>
     for_each_type<Func, Ts...>::execute(paramName);
   }
 };
-}
+}  // namespace detail
