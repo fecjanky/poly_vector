@@ -67,7 +67,7 @@ private:
 };
 
 constexpr auto num_objs
-    = 2 * cache_size / std::max(sizeof(Implementation1), sizeof(Implementation2));
+    = 8 * cache_size / std::max(sizeof(Implementation1), sizeof(Implementation2));
 
 using namespace std::chrono;
 
