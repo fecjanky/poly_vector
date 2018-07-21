@@ -1,8 +1,10 @@
 [![Build Status](https://travis-ci.org/fecjanky/poly_vector.svg?branch=master)](https://travis-ci.org/fecjanky/poly_vector)  [![Coverage Status](https://coveralls.io/repos/github/fecjanky/poly_vector/badge.svg?branch=master)](https://coveralls.io/github/fecjanky/poly_vector?branch=master)
 # poly_vector
 
-poly_vector is an std::vector like class template tailored for storing polymorphic objects derived 
+poly_vector is an ```std::vector``` like class template tailored for storing polymorphic objects derived 
 from a well-known interface of which the class is parametrized in.
+Almost all well-known methods of ```std::vector``` - that were meaningful in this context - are implemented in ```poly_vector``` resulting in
+a well-known API for the container operations.
 
 ## Usage 
 
@@ -51,14 +53,37 @@ v.pop_back();
 // invoke doSomething() on ImplB object
 v.back().doSomething();
 
+// remove the first elem
+v.erase(v.begin());
+
+// invoke doSomething() on ImplB object (again)
+v.front().doSomething();
+
 ...
 
 ```
 
+The default template arguments of ```poly_vector``` allows
+that if your implementation classes are regular in terms of copying/moving, ```poly_vector``` will 
+capture and maintain that information at the time of insertion on how to clone/move the object around (this behavior is implemented through ```delegate_cloning_policy```).
+Also by default it uses the STL default allocator ```std::allocator``` :
+
+```cpp
+template <class IF,
+    class Allocator = std::allocator<IF>,
+    class CloningPolicy = delegate_cloning_policy<IF, Allocator>
+>
+class poly_vector;
+```
+
+
+
+
 
 ## Benefits
 
-```poly_vector``` manages the underlying storage as a single chunk of memory, therefore it provides the following benefits:
+```poly_vector``` manages the underlying storage as a single chunk of memory.
+It has the following benefits:
 * reduced allocation count compared to ```std::vector<std::unique_ptr<Interface>>>``` based alternative
 * increased sequential access performance due to locality of references enforced by the structure automatically without the need of custom allocators
 * less typing when pushing objects into the the container
@@ -86,5 +111,10 @@ from visualizer/poly_vector.natvis
 *Natvis debug visualization*
 
 ## TODOs
-* GDB pretty printer 
+* documentation of ```cloning_policy``` concept
+* document ```delegate_cloning_policy```, ```virtual_cloning_policy``` and ```no_cloning_policy``` cloning policies
+* dev docs on internal implementation
+* advanced examples with custom cloning policy and/or allocator
+* GDB pretty printer
+* minor code cleanup
 
