@@ -14,7 +14,13 @@ if (MSVC)
     set(SRC include/catch_ext.hpp include/test_poly_vector.h ${POLY_VECTOR_NATVIS_FILE} ${POLY_VECTOR_HEADER_FILE} ${SRC})
 endif (MSVC)
 
+
+
 add_executable(poly_vector_test  ${SRC})
+
+if( ${CMAKE_BUILD_TYPE} == "COVERAGE")
+target_compile_definitions(poly_vector_test POLY_VECTOR_COVERAGE_BUILD)
+endif()
 
 target_link_libraries(poly_vector_test PolyVector Catch_lib)
 set_target_properties(poly_vector_test PROPERTIES LINKER_LANGUAGE CXX)

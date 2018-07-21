@@ -267,8 +267,10 @@ namespace poly_vector_impl {
                 swap(get_allocator_ref(), x.get_allocator_ref());
             } else if (!allocator_is_always_equal::value
                 && get_allocator_ref() != x.get_allocator_ref()) {
-                // Undefined behavior
+#ifndef POLY_VECTOR_COVERAGE_BUILD
+                // Undefined behavior, no assertion in coverage build
                 assert(0);
+#endif
             }
             swap(_storage, x._storage);
             swap(_end_storage, x._end_storage);
