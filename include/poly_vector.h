@@ -882,8 +882,8 @@ inline poly_vector<I, A, C>::poly_vector(const poly_vector& other)
 }
 
 template <class I, class A, class C>
-inline poly_vector<I, A, C>::poly_vector(poly_vector&& other)
-    : poly_vector_impl::allocator_base<allocator_type>(std::move(other.base())) noexcept
+inline poly_vector<I, A, C>::poly_vector(poly_vector&& other) noexcept
+    : poly_vector_impl::allocator_base<allocator_type>(std::move(other.base()))
     , _free_elem { other._free_elem }
     , _begin_storage { other._begin_storage }
     , _align_max { other._align_max }
