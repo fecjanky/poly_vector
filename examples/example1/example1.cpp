@@ -34,7 +34,7 @@ int main()
 
     poly_vector<Interface> v;
 
-    v.push_back(ImplA());
+    v.push_back(ImplA(3.14));
     v.emplace_back<ImplB<128>>();
     v.emplace_back<ImplC>();
 

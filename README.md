@@ -69,7 +69,7 @@ int main()
 
     poly_vector<Interface> v;
 
-    v.push_back(ImplA());
+    v.push_back(ImplA(3.14));
     v.emplace_back<ImplB<128>>();
     v.emplace_back<ImplC>();
 
@@ -90,12 +90,10 @@ int main()
     // invoke doSomething() on ImplB object (again)
     v.front().doSomething();
 }
-
-
 ```
 The program above outputs:
 ```
-ImplA:0
+ImplA:3.14
 ImplB:128
 ImplC
 ImplB:128
