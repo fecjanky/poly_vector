@@ -5,15 +5,15 @@
 #include <iostream>
 #include <vector>
 
-#include "poly_vector.h"
 #include "test_poly_vector.h"
+#include <poly/vector.h>
 
 std::atomic<size_t> Interface::last_id { 0 };
 
 TEST_CASE(
     "default_constructed_poly_vec_is_empty_with_max_align_equals_one", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
+    poly::vector<Interface> v;
     REQUIRE(v.empty());
     REQUIRE(0 == v.size());
     REQUIRE(0 == v.sizes().first);
@@ -21,16 +21,16 @@ TEST_CASE(
     REQUIRE(0 == v.capacity());
     REQUIRE(0 == v.capacities().first);
     REQUIRE(0 == v.capacities().second);
-    constexpr auto alignment = poly::poly_vector<Interface>::default_alignement;
+    constexpr auto alignment = poly::vector<Interface>::default_alignement;
     REQUIRE(alignment == v.max_align());
 }
 
 TEST_CASE(
     "reserve_increases_capacity_with_default_align_as_max_align_t", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
-    constexpr size_t             n     = 16;
-    constexpr size_t             avg_s = 64;
+    poly::vector<Interface> v;
+    constexpr size_t        n     = 16;
+    constexpr size_t        avg_s = 64;
     v.reserve(n, avg_s);
     REQUIRE(v.empty());
     REQUIRE(0 == v.size());
@@ -44,10 +44,10 @@ TEST_CASE(
 
 TEST_CASE("reserve_reallocates_capacity_when_max_align_changes", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
-    const auto&                  cv    = v;
-    constexpr size_t             n     = 16;
-    constexpr size_t             avg_s = 64;
+    poly::vector<Interface> v;
+    const auto&             cv    = v;
+    constexpr size_t        n     = 16;
+    constexpr size_t        avg_s = 64;
     v.reserve(n, avg_s);
     auto old_data   = v.data();
     auto c_old_data = cv.data();
@@ -60,9 +60,9 @@ TEST_CASE("reserve_does_not_increase_capacity_when_size_is_less_than_current_"
           "capacity",
     "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
-    constexpr size_t             n     = 16;
-    constexpr size_t             avg_s = 8;
+    poly::vector<Interface> v;
+    constexpr size_t        n     = 16;
+    constexpr size_t        avg_s = 8;
     v.reserve(n, avg_s);
     const auto capacities = v.capacities();
     v.reserve(n / 2, avg_s);
@@ -76,7 +76,7 @@ TEST_CASE("reserve_does_not_increase_capacity_when_size_is_less_than_current_"
 TEST_CASE(
     "descendants_of_interface_can_be_pushed_back_into_the_vector", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
+    poly::vector<Interface> v;
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     REQUIRE(2 == v.size());
@@ -84,7 +84,7 @@ TEST_CASE(
 
 TEST_CASE("reverse iterators on a vector", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
+    poly::vector<Interface> v;
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     const auto& cv      = v;
@@ -109,7 +109,7 @@ TEST_CASE("reverse iterators on a vector", "[poly_vector_basic_tests]")
 
 TEST_CASE("range based for can be used with the vector", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
+    poly::vector<Interface> v;
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     const auto& cv = v;
@@ -124,7 +124,7 @@ TEST_CASE("range based for can be used with the vector", "[poly_vector_basic_tes
 TEST_CASE(
     "descendants of interface can be emplaced back into the vector", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
+    poly::vector<Interface> v;
 
     auto& first = v.emplace_back<Impl1>(3.14, false);
 
@@ -145,8 +145,8 @@ TEST_CASE(
 
 TEST_CASE("iterator operations", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
-    using iterator = poly::poly_vector<Interface>::iterator;
+    poly::vector<Interface> v;
+    using iterator = poly::vector<Interface>::iterator;
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     const auto first_id  = v[0].getId();
@@ -276,14 +276,14 @@ TEST_CASE("iterator operations", "[poly_vector_basic_tests]")
 
 TEST_CASE("if reserving too much lenght error is thrown", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v;
+    poly::vector<Interface> v;
     REQUIRE_THROWS_AS(
         v.reserve(std::allocator<uint8_t>().max_size(), 4 * sizeof(void*)), std::length_error);
 }
 
 TEST_CASE("is_not_copyable_with_no_cloning_policy", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface, std::allocator<Interface>, poly::no_cloning_policy> v {};
+    poly::vector<Interface, std::allocator<Interface>, poly::no_cloning_policy> v {};
     v.reserve(2, std::max(sizeof(Impl1), sizeof(Impl2)), std::max(alignof(Impl1), alignof(Impl2)));
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
@@ -297,7 +297,7 @@ template <typename T> bool is_aligned_properly(T& obj)
 
 TEST_CASE("objects_are_allocated_with_proper_alignment", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v {};
+    poly::vector<Interface> v {};
     v.reserve(2, std::max(sizeof(Impl1), sizeof(Impl2)), std::max(alignof(Impl1), alignof(Impl2)));
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
@@ -307,7 +307,7 @@ TEST_CASE("objects_are_allocated_with_proper_alignment", "[poly_vector_basic_tes
 
 TEST_CASE("no_cloning_policy_gives_e_what", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface, std::allocator<Interface>, poly::no_cloning_policy> v {};
+    poly::vector<Interface, std::allocator<Interface>, poly::no_cloning_policy> v {};
     v.reserve(1, sizeof(Impl1));
     v.push_back(Impl1(3.14));
 
@@ -322,7 +322,7 @@ TEST_CASE("no_cloning_policy_gives_e_what", "[poly_vector_basic_tests]")
 
 TEST_CASE("erase_from_begin_to_end_clears_the_vector", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v {};
+    poly::vector<Interface> v {};
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     auto it = v.erase(v.begin(), v.end());
@@ -333,7 +333,7 @@ TEST_CASE("erase_from_begin_to_end_clears_the_vector", "[poly_vector_basic_tests
 TEST_CASE("construction with custom cloning policy")
 {
     using namespace custom;
-    poly::poly_vector<CustInterface, std::allocator<CustInterface>, CustomCloningPolicy> v;
+    poly::vector<CustInterface, std::allocator<CustInterface>, CustomCloningPolicy> v;
     v.emplace_back<CustImpl>();
     v.emplace_back<CustImpl>();
     v.emplace_back<CustOtherImpl>();
@@ -364,7 +364,7 @@ TEST_CASE("construction with custom cloning policy")
 TEST_CASE(
     "erase_can_be_called_with_any_valid_iterator_to_a_vector_elem", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v {};
+    poly::vector<Interface> v {};
     v.push_back(Impl1(3.14));
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
@@ -447,7 +447,7 @@ TEST_CASE(
 
 TEST_CASE("erase_includes_end_remove_elems_from_end", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v {};
+    poly::vector<Interface> v {};
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     auto id = v[0].getId();
@@ -460,7 +460,7 @@ TEST_CASE("erase_includes_end_remove_elems_from_end", "[poly_vector_basic_tests]
 
 TEST_CASE("erase_from_end_position_is_same_as_pop_back", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v {};
+    poly::vector<Interface> v {};
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     auto id = v[0].getId();
@@ -471,8 +471,8 @@ TEST_CASE("erase_from_end_position_is_same_as_pop_back", "[poly_vector_basic_tes
 
 TEST_CASE("get_allocator fetches the allocator used by the container", "[poly_vector_basic_tests]")
 {
-    poly::poly_vector<Interface> v {};
-    REQUIRE(v.get_allocator() == poly::poly_vector<Interface>::allocator_type());
+    poly::vector<Interface> v {};
+    REQUIRE(v.get_allocator() == poly::vector<Interface>::allocator_type());
 }
 
 using _1 = std::true_type;
@@ -511,9 +511,9 @@ TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_b
     AllocD, D2, D3, D4, D5, D6, D7, D10, D11, D12, D13, D14, D15, D16, D17, D18, D19, D20, D21, D22,
     D23, D24, D25, D26, D27, D28, D29, D30, D31)
 {
-    using Allocator   = custom::Allocator<Interface, AllocD>;
-    using poly_vector = poly::poly_vector<Interface, Allocator>;
-    poly_vector v;
+    using Allocator = custom::Allocator<Interface, AllocD>;
+    using vector    = poly::vector<Interface, Allocator>;
+    vector v;
     v.push_back(Impl1(3.14));
     v.push_back(Impl2());
     v.push_back(Impl1(3.14));
@@ -522,7 +522,7 @@ TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_b
 
     SECTION("when vector is move constructed")
     {
-        poly_vector v_m = std::move(v);
+        vector v_m = std::move(v);
         REQUIRE(v_m.size() == old_size);
         REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v_m[0]));
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[1]));
@@ -532,7 +532,7 @@ TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_b
 
     SECTION("when vector is copy constructed")
     {
-        poly_vector v_m = v;
+        vector v_m = v;
         REQUIRE(v_m.size() == old_size);
         REQUIRE_NOTHROW(dynamic_cast<Impl1&>(v_m[0]));
         REQUIRE_NOTHROW(dynamic_cast<Impl2&>(v_m[1]));
@@ -547,7 +547,7 @@ TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_b
 
     SECTION("when vector is move assigned")
     {
-        poly_vector v_m;
+        vector v_m;
         v_m.push_back(Impl1(3.14));
         v_m.push_back(Impl2());
         v_m.push_back(Impl1(3.14));
@@ -563,7 +563,7 @@ TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_b
 
     SECTION("when vector is copy assigned")
     {
-        poly_vector v_m;
+        vector v_m;
         v_m.push_back(Impl1(3.14));
         v_m.push_back(Impl2());
         v_m.push_back(Impl1(3.14));
@@ -579,23 +579,23 @@ TYPE_P_TEST_CASE("basic operations when using custom allocator", "[poly_vector_b
 
     SECTION("when vector is move assigned from empty vec")
     {
-        poly_vector v_empty;
+        vector v_empty;
         v = std::move(v_empty);
         REQUIRE(v.empty());
     }
 
     SECTION("when vector is copy assigned from empty vec")
     {
-        poly_vector v_empty;
+        vector v_empty;
         v = v_empty;
         REQUIRE(v.size() == v_empty.size());
     }
 }
 
-TYPE_P_TEST_CASE("poly vector modifiers test", "[poly_vector]", CloningPolicy,
+TYPE_P_TEST_CASE("poly vector modifiers test", "[vector]", CloningPolicy,
     poly::virtual_cloning_policy, poly::delegate_cloning_policy<Interface>)
 {
-    using vector = poly::poly_vector<Interface, std::allocator<Interface>, CloningPolicy>;
+    using vector = poly::vector<Interface, std::allocator<Interface>, CloningPolicy>;
 
     Impl1                 obj1;
     Impl2T<CloningPolicy> obj2;

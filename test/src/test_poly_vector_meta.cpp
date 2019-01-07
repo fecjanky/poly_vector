@@ -5,10 +5,10 @@
 #include <iostream>
 #include <vector>
 
-#include <poly_vector.h>
+#include <poly/vector.h>
 #include <test_poly_vector.h>
 
-using namespace poly::poly_vector_impl;
+using namespace poly::vector_impl;
 
 template <bool B> struct s_has_aeq {
     using is_always_equal = std::integral_constant<bool, B>;
@@ -20,6 +20,7 @@ struct no_aeq {
     int a;
 };
 
+#if !defined(POLY_VECTOR_HAS_CXX_ALLOCATOR_ALWAYS_EQUAL)
 static_assert(
     allocator_is_always_equal<s_has_aeq<true>>::has_always_equal, "should have always equal");
 
@@ -48,6 +49,8 @@ static_assert(allocator_is_always_equal<custom::Allocator<int>>::has_always_equa
 
 static_assert(
     !allocator_is_always_equal<custom::Allocator<int>>::value, "should have always equal as true");
+
+#endif
 
 using traits     = std::allocator_traits<custom::Allocator<int>>;
 using std_traits = std::allocator_traits<std::allocator<int>>;

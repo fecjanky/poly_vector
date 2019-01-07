@@ -19,6 +19,8 @@
 // THE SOFTWARE.
 #pragma once
 
+#include <poly/detail/vector_impl.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -39,52 +41,7 @@ template <typename T> struct type_tag {
 
 namespace vector_impl {
 
-    template <typename... Ts> struct OrType;
-
-    template <typename... Ts> struct OrType<::std::true_type, Ts...> {
-        static constexpr bool value = true;
-        using type                  = ::std::true_type;
-    };
-
-    template <typename... Ts> struct OrType<::std::false_type, Ts...> {
-        static constexpr bool value = OrType<Ts...>::value;
-        using type                  = typename OrType<Ts...>::type;
-    };
-
-    template <> struct OrType<> {
-        static constexpr bool value = false;
-        using type                  = ::std::false_type;
-    };
-
-    template <typename... Ts> using or_type_t = typename OrType<Ts...>::type;
-
     template <typename T> struct TD;
-
-    template <typename A, bool b> struct select_always_eq_trait {
-        using type = typename A::is_always_equal;
-    };
-
-    template <typename A> struct select_always_eq_trait<A, false> {
-        using type = typename std::is_empty<A>::type;
-    };
-
-    // until c++17...
-    template <typename A> struct allocator_is_always_equal {
-    private:
-        template <typename AA>
-        static std::true_type  has_always_equal_test(const AA&, typename AA::is_always_equal*);
-        static std::false_type has_always_equal_test(...);
-
-    public:
-        static constexpr bool has_always_equal = std::is_same<std::true_type,
-            decltype(has_always_equal_test(std::declval<A>(), nullptr))>::value;
-
-        using type                  = typename select_always_eq_trait<A, has_always_equal>::type;
-        static constexpr bool value = type::value;
-    };
-
-    template <typename A>
-    using allocator_is_always_equal_t = typename allocator_is_always_equal<A>::type;
 
     template <class TT> struct has_noexcept_movable {
         template <class U>
@@ -204,7 +161,8 @@ namespace vector_impl {
 
         allocator_base& copy_assign_impl(const allocator_base& a, std::true_type /*unused*/)
         {
-            // Note: allocator copy assignment must not throw
+            static_assert(std::is_nothrow_copy_assignable<allocator_type>::value,
+                "allocator copy assignment must not throw");
             pointer s      = nullptr;
             auto    a_copy = a.get_allocator_ref();
             if (a.size()) {
@@ -280,7 +238,7 @@ namespace vector_impl {
             using T      = std::decay_t<decltype(*obj)>;
             using traits = typename allocator_traits::template rebind_traits<T>;
             static_assert(
-                std::is_same<PointerType, typename traits::pointer>::value, "Invalid pointer type");
+                std::is_same<PointerType, typename traits::pointer>::value, "invalid pointer type");
             typename traits::allocator_type a(get_allocator_ref());
             traits::destroy(a, obj);
         }
@@ -290,7 +248,7 @@ namespace vector_impl {
             using T      = std::decay_t<decltype(*storage)>;
             using traits = typename allocator_traits::template rebind_traits<T>;
             static_assert(
-                std::is_same<PointerType, typename traits::pointer>::value, "Invalid pointer type");
+                std::is_same<PointerType, typename traits::pointer>::value, "invalid pointer type");
             typename traits::allocator_type a(get_allocator_ref());
             traits::construct(a, storage, std::forward<Args>(args)...);
             return storage;
@@ -306,7 +264,7 @@ namespace vector_impl {
 
     template <class Policy, class Interface, class Allocator> struct cloning_policy_traits {
         static_assert(is_cloning_policy<Policy, Interface, Allocator>::value,
-            "Policy is not a cloning policy");
+            "policy is not a cloning policy");
         using allocator_type   = Allocator;
         using allocator_traits = std::allocator_traits<allocator_type>;
         using pointer          = typename allocator_traits::pointer;
@@ -646,21 +604,18 @@ template <class ElemPtrT>
 vector_iterator<ElemPtrT> operator+(
     vector_iterator<ElemPtrT> a, typename vector_iterator<ElemPtrT>::difference_type n)
 {
-    auto temp = a;
     return a += n;
 }
 template <class ElemPtrT>
 vector_iterator<ElemPtrT> operator+(
     typename vector_iterator<ElemPtrT>::difference_type n, vector_iterator<ElemPtrT> a)
 {
-    auto temp = a;
     return a += n;
 }
 template <class ElemPtrT>
 vector_iterator<ElemPtrT> operator-(
     vector_iterator<ElemPtrT> i, typename vector_iterator<ElemPtrT>::difference_type n)
 {
-    auto temp = i;
     return i -= n;
 }
 
@@ -707,11 +662,13 @@ public:
     using interface_type_noexcept_movable = typename cloning_policy_traits::noexcept_movable;
 
     static_assert(std::is_same<IF, interface_type>::value,
-        "Interface type must be a non-cv qualified user defined type");
+        "interface type must be a non-cv qualified user defined type");
     static_assert(std::is_polymorphic<interface_type>::value, "interface_type is not polymorphic");
     static_assert(vector_impl::is_cloning_policy<CloningPolicy, interface_type,
                       interface_allocator_type>::value,
         "invalid cloning policy type");
+    static_assert(alignof(elem_ptr) <= alignof(std::max_align_t),
+        "cloning policy type must not be over aligned");
     static constexpr auto default_avg_size   = 4 * sizeof(void*);
     static constexpr auto default_alignement = alignof(interface_reference);
     ///////////////////////////////////////////////

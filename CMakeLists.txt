@@ -25,6 +25,7 @@ endif()
 target_include_directories(PolyVector
   INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/gen>
     $<INSTALL_INTERFACE:${POLY_VECTOR_CMAKE_INSTALL_INCLUDE_DIR}>
 )
 
@@ -67,12 +68,23 @@ install(FILES "${PROJECT_BINARY_DIR}/PolyVectorConfigVersion.cmake"
               "${PROJECT_BINARY_DIR}/PolyVectorConfig.cmake"
         DESTINATION ${POLY_VECTOR_CMAKE_LIB_DIR})
 		
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${POLY_VECTOR_CMAKE_INSTALL_INCLUDE_DIR})
+
+install(FILES 
+ ${PROJECT_SOURCE_DIR}/include/poly/vector.h 
+ DESTINATION ${POLY_VECTOR_CMAKE_INSTALL_INCLUDE_DIR})
+
+install(FILES 
+ ${PROJECT_SOURCE_DIR}/include/poly/detail/vector_impl.h 
+ ${CMAKE_BINARY_DIR}/gen/poly/detail/vector_config.h  
+ DESTINATION ${POLY_VECTOR_CMAKE_INSTALL_INCLUDE_DIR}/detail)
+
 install(FILES  visualizer/poly_vector.natvis DESTINATION ${POLY_VECTOR_CMAKE_INSTALL_SHARE_DIR})
 
 
 get_filename_component(POLY_VECTOR_NATVIS_FILE visualizer/poly_vector.natvis ABSOLUTE)
 get_filename_component(POLY_VECTOR_HEADER_FILE include/poly/vector.h ABSOLUTE)
+get_filename_component(POLY_VECTOR_IMPL_HEADER_FILE include/poly/detail/vector_impl.h ABSOLUTE)
+set(POLY_VECTOR_HEADER_FILES ${POLY_VECTOR_HEADER_FILE}  ${POLY_VECTOR_IMPL_HEADER_FILE})
 
 add_subdirectory(test)
 add_subdirectory(benchmark)

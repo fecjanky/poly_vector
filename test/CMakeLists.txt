@@ -11,7 +11,7 @@ set(SRC
 )
 
 if (MSVC)
-    set(SRC include/catch_ext.hpp include/test_poly_vector.h ${POLY_VECTOR_NATVIS_FILE} ${POLY_VECTOR_HEADER_FILE} ${SRC})
+    set(SRC include/catch_ext.hpp include/test_poly_vector.h ${POLY_VECTOR_NATVIS_FILE} ${POLY_VECTOR_HEADER_FILES} ${SRC})
 endif (MSVC)
 
 
