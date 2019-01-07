@@ -4,10 +4,13 @@ enable_testing()
 
 project("poly_vector" VERSION 0.1 LANGUAGES CXX)
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMakeModules)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
 include(config)
 include(catch)
+include(ConfigureFeatures)
+
 
 add_library(PolyVector INTERFACE)
 
@@ -69,7 +72,7 @@ install(FILES  visualizer/poly_vector.natvis DESTINATION ${POLY_VECTOR_CMAKE_INS
 
 
 get_filename_component(POLY_VECTOR_NATVIS_FILE visualizer/poly_vector.natvis ABSOLUTE)
-get_filename_component(POLY_VECTOR_HEADER_FILE include/poly_vector.h ABSOLUTE)
+get_filename_component(POLY_VECTOR_HEADER_FILE include/poly/vector.h ABSOLUTE)
 
 add_subdirectory(test)
 add_subdirectory(benchmark)
