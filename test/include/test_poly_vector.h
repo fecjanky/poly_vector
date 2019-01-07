@@ -1,9 +1,9 @@
 #pragma once
-#include "poly_vector.h"
 #include <atomic>
 #include <cassert>
 #include <iostream>
 #include <memory>
+#include <poly/vector.h>
 #include <stdexcept>
 
 class Cookie {
@@ -176,10 +176,10 @@ public:
     }
 
 private:
-    poly::poly_vector<Interface, std::allocator<Interface>, cloningp> v;
-    std::unique_ptr<double[]>                                         p;
-    Cookie                                                            cookie;
-    int                                                               pad[32];
+    poly::vector<Interface, std::allocator<Interface>, cloningp> v;
+    std::unique_ptr<double[]>                                    p;
+    Cookie                                                       cookie;
+    int                                                          pad[32];
 };
 
 using Impl2 = Impl2T<poly::virtual_cloning_policy>;

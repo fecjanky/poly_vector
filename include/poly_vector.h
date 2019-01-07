@@ -37,7 +37,7 @@ template <typename T> struct type_tag {
     using type = T;
 };
 
-namespace poly_vector_impl {
+namespace vector_impl {
 
     template <typename... Ts> struct OrType;
 
@@ -153,8 +153,7 @@ namespace poly_vector_impl {
         using propagate_on_container_swap = typename allocator_traits::propagate_on_container_swap;
         using propagate_on_container_move_assignment =
             typename allocator_traits::propagate_on_container_move_assignment;
-        using allocator_is_always_equal
-            = poly_vector_impl::allocator_is_always_equal_t<allocator_type>;
+        using allocator_is_always_equal = vector_impl::allocator_is_always_equal_t<allocator_type>;
         static_assert(std::is_same<value_type, uint8_t>::value, "requires a byte allocator");
         using void_pointer       = typename allocator_traits::void_pointer;
         using const_void_pointer = typename allocator_traits::const_void_pointer;
@@ -303,7 +302,7 @@ namespace poly_vector_impl {
 
     template <class Policy, class Interface, class Allocator>
     using is_cloning_policy = std::integral_constant<bool,
-        poly_vector_impl::is_cloning_policy_impl<Policy, Interface, Allocator>::value>;
+        vector_impl::is_cloning_policy_impl<Policy, Interface, Allocator>::value>;
 
     template <class Policy, class Interface, class Allocator> struct cloning_policy_traits {
         static_assert(is_cloning_policy<Policy, Interface, Allocator>::value,
@@ -314,10 +313,10 @@ namespace poly_vector_impl {
         using void_pointer     = typename allocator_traits::void_pointer;
 
         using policy_impl
-            = ::poly::poly_vector_impl::is_cloning_policy_impl<Policy, Interface, allocator_type>;
+            = ::poly::vector_impl::is_cloning_policy_impl<Policy, Interface, allocator_type>;
         using has_move_t       = typename policy_impl::has_move_t;
         using noexcept_movable = std::integral_constant<bool,
-            poly_vector_impl::is_noexcept_movable_t<Policy>::value && has_move_t::value>;
+            vector_impl::is_noexcept_movable_t<Policy>::value && has_move_t::value>;
 
         static pointer move(const Policy& p, const allocator_type& a, pointer obj,
             void_pointer dest) noexcept(noexcept_movable::value)
@@ -338,7 +337,7 @@ namespace poly_vector_impl {
         }
     };
 
-} // namespace poly_vector_impl
+} // namespace vector_impl
 
 template <class Interface, class Allocator = std::allocator<Interface>,
     typename Interface_Is_NoExcept_Movable = std::true_type>
@@ -348,7 +347,7 @@ template <class IF, class Allocator = std::allocator<IF>,
     /// implicit noexcept_movability when using defaults of delegate cloning
     /// policy
     class CloningPolicy = delegate_cloning_policy<IF, Allocator>>
-class poly_vector;
+class vector;
 
 template <typename CP, typename Constructible> struct CloningPolicyHolder : public CP {
     CloningPolicyHolder()                           = default;
@@ -367,9 +366,9 @@ template <typename CP> struct CloningPolicyHolder<CP, std::true_type> : public C
 };
 
 template <class CloningPolicy, class AllocatorTraits>
-struct poly_vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
-                                  typename std::is_constructible<CloningPolicy,
-                                      type_tag<typename AllocatorTraits::value_type>>::type> {
+struct vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
+                             typename std::is_constructible<CloningPolicy,
+                                 type_tag<typename AllocatorTraits::value_type>>::type> {
     using void_pointer  = typename AllocatorTraits::void_pointer;
     using pointer       = typename AllocatorTraits::pointer;
     using const_pointer = typename AllocatorTraits::const_pointer;
@@ -387,7 +386,7 @@ struct poly_vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
     using size_descr_t = std::pair<size_t, size_t>;
     using size_func_t  = size_descr_t();
     using policy_t     = CloningPolicy;
-    poly_vector_elem_ptr()
+    vector_elem_ptr()
         : ptr {}
         , sf {}
     {
@@ -395,28 +394,27 @@ struct poly_vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
 
     template <typename T,
         typename = std::enable_if_t<std::is_base_of<value_type, std::decay_t<T>>::value>>
-    explicit poly_vector_elem_ptr(
-        type_tag<T> t, void_pointer s = nullptr, pointer i = nullptr) noexcept
+    explicit vector_elem_ptr(type_tag<T> t, void_pointer s = nullptr, pointer i = nullptr) noexcept
         : base(t)
         , ptr { s, i }
-        , sf { poly_vector_elem_ptr::size_func<std::decay_t<T>>() }
+        , sf { vector_elem_ptr::size_func<std::decay_t<T>>() }
     {
     }
 
-    poly_vector_elem_ptr(const poly_vector_elem_ptr& other) noexcept
+    vector_elem_ptr(const vector_elem_ptr& other) noexcept
         : base(other)
         , ptr { other.ptr }
         , sf { other.sf }
     {
     }
-    poly_vector_elem_ptr& operator=(const poly_vector_elem_ptr& rhs) noexcept
+    vector_elem_ptr& operator=(const vector_elem_ptr& rhs) noexcept
     {
         policy() = rhs.policy();
         ptr      = rhs.ptr;
         sf       = rhs.sf;
         return *this;
     }
-    void swap(poly_vector_elem_ptr& rhs) noexcept
+    void swap(vector_elem_ptr& rhs) noexcept
     {
         using std::swap;
         swap(policy(), rhs.policy());
@@ -429,7 +427,7 @@ struct poly_vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
     size_t                                    size() const noexcept { return sf.first; }
     size_t                                    align() const noexcept { return sf.second; }
     template <typename T> static size_descr_t size_func() { return { sizeof(T), alignof(T) }; }
-    ~poly_vector_elem_ptr()
+    ~vector_elem_ptr()
     {
         ptr.first = ptr.second = nullptr;
         sf                     = size_descr_t { 0, 0 };
@@ -442,7 +440,7 @@ private:
 };
 
 template <class C, class A>
-void swap(poly_vector_elem_ptr<C, A>& lhs, poly_vector_elem_ptr<C, A>& rhs) noexcept
+void swap(vector_elem_ptr<C, A>& lhs, vector_elem_ptr<C, A>& rhs) noexcept
 {
     lhs.swap(rhs);
 }
@@ -543,8 +541,8 @@ private:
 };
 
 template <class ElemPtrT>
-class poly_vector_iterator : public std::iterator<std::random_access_iterator_tag,
-                                 typename std::remove_const_t<ElemPtrT>::value_type> {
+class vector_iterator : public std::iterator<std::random_access_iterator_tag,
+                            typename std::remove_const_t<ElemPtrT>::value_type> {
 public:
     using p_elem         = std::remove_const_t<ElemPtrT>;
     using interface_type = typename p_elem::value_type;
@@ -557,31 +555,31 @@ public:
     using reference       = std::add_lvalue_reference_t<interface_type>;
     using const_reference = std::add_lvalue_reference_t<std::add_const_t<interface_type>>;
 
-    poly_vector_iterator()
+    vector_iterator()
         : curr {}
     {
     }
-    explicit poly_vector_iterator(elem_ptr p)
+    explicit vector_iterator(elem_ptr p)
         : curr { p }
     {
     }
 
     template <class T,
         typename = std::enable_if_t<std::is_same<p_elem, T>::value
-            && !std::is_same<poly_vector_iterator, poly_vector_iterator<T>>::value>>
-    poly_vector_iterator(const poly_vector_iterator<T>& other)
+            && !std::is_same<vector_iterator, vector_iterator<T>>::value>>
+    vector_iterator(const vector_iterator<T>& other)
         : curr { other.get() }
     {
     }
 
-    poly_vector_iterator(const poly_vector_iterator&) = default;
-    poly_vector_iterator(poly_vector_iterator&&)      = default;
-    poly_vector_iterator& operator=(const poly_vector_iterator&) = default;
-    poly_vector_iterator& operator=(poly_vector_iterator&&) = default;
+    vector_iterator(const vector_iterator&) = default;
+    vector_iterator(vector_iterator&&)      = default;
+    vector_iterator& operator=(const vector_iterator&) = default;
+    vector_iterator& operator=(vector_iterator&&) = default;
 
-    ~poly_vector_iterator() = default;
+    ~vector_iterator() = default;
 
-    void swap(poly_vector_iterator& rhs)
+    void swap(vector_iterator& rhs)
     {
         using std::swap;
         swap(curr, rhs.curr);
@@ -592,47 +590,47 @@ public:
     const_pointer   operator->() const noexcept { return curr->ptr.second; }
     const_reference operator*() const noexcept { return *curr->ptr.second; }
 
-    poly_vector_iterator& operator++() noexcept
+    vector_iterator& operator++() noexcept
     {
         ++curr;
         return *this;
     }
-    poly_vector_iterator operator++(int) noexcept
+    vector_iterator operator++(int) noexcept
     {
-        poly_vector_iterator i(*this);
+        vector_iterator i(*this);
         ++curr;
         return i;
     }
-    poly_vector_iterator& operator--() noexcept
+    vector_iterator& operator--() noexcept
     {
         --curr;
         return *this;
     }
-    poly_vector_iterator operator--(int) noexcept
+    vector_iterator operator--(int) noexcept
     {
-        poly_vector_iterator i(*this);
+        vector_iterator i(*this);
         --curr;
         return i;
     }
-    poly_vector_iterator& operator+=(difference_type n)
+    vector_iterator& operator+=(difference_type n)
     {
         curr += n;
         return *this;
     }
-    poly_vector_iterator& operator-=(difference_type n)
+    vector_iterator& operator-=(difference_type n)
     {
         curr -= n;
         return *this;
     }
-    difference_type operator-(poly_vector_iterator rhs) const { return curr - rhs.curr; }
+    difference_type operator-(vector_iterator rhs) const { return curr - rhs.curr; }
     reference       operator[](difference_type n) { return *(curr[n].ptr.second); }
     const_reference operator[](difference_type n) const { return *(curr[n].ptr.second); }
-    bool operator==(const poly_vector_iterator& rhs) const noexcept { return curr == rhs.curr; }
-    bool operator!=(const poly_vector_iterator& rhs) const noexcept { return curr != rhs.curr; }
-    bool operator<(const poly_vector_iterator& rhs) const noexcept { return curr < rhs.curr; }
-    bool operator>(const poly_vector_iterator& rhs) const noexcept { return curr > rhs.curr; }
-    bool operator<=(const poly_vector_iterator& rhs) const noexcept { return curr <= rhs.curr; }
-    bool operator>=(const poly_vector_iterator& rhs) const noexcept { return curr >= rhs.curr; }
+    bool operator==(const vector_iterator& rhs) const noexcept { return curr == rhs.curr; }
+    bool operator!=(const vector_iterator& rhs) const noexcept { return curr != rhs.curr; }
+    bool operator<(const vector_iterator& rhs) const noexcept { return curr < rhs.curr; }
+    bool operator>(const vector_iterator& rhs) const noexcept { return curr > rhs.curr; }
+    bool operator<=(const vector_iterator& rhs) const noexcept { return curr <= rhs.curr; }
+    bool operator>=(const vector_iterator& rhs) const noexcept { return curr >= rhs.curr; }
 
     elem_ptr get() const noexcept { return curr; }
 
@@ -640,36 +638,35 @@ private:
     elem_ptr curr;
 };
 
-template <class ElemPtrT>
-void swap(poly_vector_iterator<ElemPtrT>& lhs, poly_vector_iterator<ElemPtrT>& rhs)
+template <class ElemPtrT> void swap(vector_iterator<ElemPtrT>& lhs, vector_iterator<ElemPtrT>& rhs)
 {
     lhs.swap(rhs);
 }
 template <class ElemPtrT>
-poly_vector_iterator<ElemPtrT> operator+(
-    poly_vector_iterator<ElemPtrT> a, typename poly_vector_iterator<ElemPtrT>::difference_type n)
+vector_iterator<ElemPtrT> operator+(
+    vector_iterator<ElemPtrT> a, typename vector_iterator<ElemPtrT>::difference_type n)
 {
     auto temp = a;
     return a += n;
 }
 template <class ElemPtrT>
-poly_vector_iterator<ElemPtrT> operator+(
-    typename poly_vector_iterator<ElemPtrT>::difference_type n, poly_vector_iterator<ElemPtrT> a)
+vector_iterator<ElemPtrT> operator+(
+    typename vector_iterator<ElemPtrT>::difference_type n, vector_iterator<ElemPtrT> a)
 {
     auto temp = a;
     return a += n;
 }
 template <class ElemPtrT>
-poly_vector_iterator<ElemPtrT> operator-(
-    poly_vector_iterator<ElemPtrT> i, typename poly_vector_iterator<ElemPtrT>::difference_type n)
+vector_iterator<ElemPtrT> operator-(
+    vector_iterator<ElemPtrT> i, typename vector_iterator<ElemPtrT>::difference_type n)
 {
     auto temp = i;
     return i -= n;
 }
 
 template <class IF, class Allocator, class CloningPolicy>
-class poly_vector : private poly_vector_impl::allocator_base<
-                        typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>> {
+class vector : private vector_impl::allocator_base<
+                   typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>> {
 public:
     ///////////////////////////////////////////////
     // Member types
@@ -689,7 +686,7 @@ public:
 
     using interface_allocator_traits = std::allocator_traits<interface_allocator_type>;
     using allocator_traits           = std::allocator_traits<allocator_type>;
-    using my_base                    = poly_vector_impl::allocator_base<allocator_type>;
+    using my_base                    = vector_impl::allocator_base<allocator_type>;
     using interface_pointer          = typename interface_allocator_traits::pointer;
     using const_interface_pointer    = typename interface_allocator_traits::const_pointer;
     using interface_reference        = std::add_lvalue_reference_t<interface_type>;
@@ -700,19 +697,19 @@ public:
     using const_void_pointer        = typename my_base::const_void_pointer;
     using size_type                 = std::size_t;
     using cloning_policy            = CloningPolicy;
-    using elem_ptr               = poly_vector_elem_ptr<cloning_policy, interface_allocator_traits>;
-    using iterator               = poly_vector_iterator<elem_ptr>;
-    using const_iterator         = poly_vector_iterator<elem_ptr const>;
-    using reverse_iterator       = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-    using cloning_policy_traits  = poly_vector_impl::cloning_policy_traits<CloningPolicy,
-        interface_type, interface_allocator_type>;
+    using elem_ptr                  = vector_elem_ptr<cloning_policy, interface_allocator_traits>;
+    using iterator                  = vector_iterator<elem_ptr>;
+    using const_iterator            = vector_iterator<elem_ptr const>;
+    using reverse_iterator          = std::reverse_iterator<iterator>;
+    using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
+    using cloning_policy_traits = vector_impl::cloning_policy_traits<CloningPolicy, interface_type,
+        interface_allocator_type>;
     using interface_type_noexcept_movable = typename cloning_policy_traits::noexcept_movable;
 
     static_assert(std::is_same<IF, interface_type>::value,
         "Interface type must be a non-cv qualified user defined type");
     static_assert(std::is_polymorphic<interface_type>::value, "interface_type is not polymorphic");
-    static_assert(poly_vector_impl::is_cloning_policy<CloningPolicy, interface_type,
+    static_assert(vector_impl::is_cloning_policy<CloningPolicy, interface_type,
                       interface_allocator_type>::value,
         "invalid cloning policy type");
     static constexpr auto default_avg_size   = 4 * sizeof(void*);
@@ -720,14 +717,14 @@ public:
     ///////////////////////////////////////////////
     // Ctors,Dtors & assignment
     ///////////////////////////////////////////////
-    poly_vector();
-    explicit poly_vector(const allocator_type& alloc);
-    poly_vector(const poly_vector& other);
-    poly_vector(poly_vector&& other) noexcept;
-    ~poly_vector();
+    vector();
+    explicit vector(const allocator_type& alloc);
+    vector(const vector& other);
+    vector(vector&& other) noexcept;
+    ~vector();
 
-    poly_vector& operator=(const poly_vector& rhs);
-    poly_vector& operator=(poly_vector&& rhs) noexcept;
+    vector& operator=(const vector& rhs);
+    vector& operator=(vector&& rhs) noexcept;
     ///////////////////////////////////////////////
     // Modifiers
     ///////////////////////////////////////////////
@@ -741,7 +738,7 @@ public:
 
     void pop_back() noexcept;
     void clear() noexcept;
-    void swap(poly_vector& x) noexcept;
+    void swap(vector& x) noexcept;
 
     // TODO(fecja): insert, erase,emplace, emplace_back, assign?
     template <class descendant_type>
@@ -836,8 +833,8 @@ private:
     static poly_copy_descr                poly_uninitialized_move(my_base& a, void_pointer dst_ptr,
                        elem_ptr_const_pointer begin, elem_ptr_const_pointer _free, elem_ptr_const_pointer end,
                        size_t max_align) noexcept;
-    poly_vector&                          copy_assign_impl(const poly_vector& rhs);
-    poly_vector&                          move_assign_impl(poly_vector&& rhs) noexcept;
+    vector&                               copy_assign_impl(const vector& rhs);
+    vector&                               move_assign_impl(vector&& rhs) noexcept;
     void                                  tidy() noexcept;
     void                                  destroy_elem(elem_ptr_pointer p) noexcept;
     std::pair<void_pointer, void_pointer> destroy_range(
@@ -846,15 +843,15 @@ private:
     iterator clear_till_end(elem_ptr_pointer first) noexcept;
     void     init_ptrs(size_t cap) noexcept;
     void     set_ptrs(poly_copy_descr p);
-    void     swap_ptrs(poly_vector&& rhs);
+    void     swap_ptrs(vector&& rhs);
     template <class T, typename... Args> void push_back_new_elem(type_tag<T> t, Args&&... args);
     template <class T, typename... Args>
-    void push_back_new_elem_w_storage_increase(type_tag<T> t, Args&&... args);
-    void push_back_new_elem_w_storage_increase_copy(poly_vector& v, std::true_type /*unused*/);
-    void push_back_new_elem_w_storage_increase_copy(poly_vector& v, std::false_type /*unused*/);
-    bool can_construct_new_elem(size_t s, size_t align) noexcept;
-    void_pointer           next_aligned_storage(size_t align) const noexcept;
-    size_t                 avg_obj_size(size_t align = 1) const noexcept;
+    void         push_back_new_elem_w_storage_increase(type_tag<T> t, Args&&... args);
+    void         push_back_new_elem_w_storage_increase_copy(vector& v, std::true_type /*unused*/);
+    void         push_back_new_elem_w_storage_increase_copy(vector& v, std::false_type /*unused*/);
+    bool         can_construct_new_elem(size_t s, size_t align) noexcept;
+    void_pointer next_aligned_storage(size_t align) const noexcept;
+    size_t       avg_obj_size(size_t align = 1) const noexcept;
     elem_ptr_pointer       begin_elem() noexcept;
     elem_ptr_const_pointer cbegin_elem() const noexcept;
     elem_ptr_pointer       end_elem() noexcept;
@@ -871,8 +868,8 @@ private:
 };
 
 template <class IF, class Allocator, class CloningPolicy>
-void swap(poly_vector<IF, Allocator, CloningPolicy>& lhs,
-    poly_vector<IF, Allocator, CloningPolicy>&       rhs) noexcept
+void swap(
+    vector<IF, Allocator, CloningPolicy>& lhs, vector<IF, Allocator, CloningPolicy>& rhs) noexcept
 {
     lhs.swap(rhs);
 }
@@ -882,7 +879,7 @@ void swap(poly_vector<IF, Allocator, CloningPolicy>& lhs,
 // implementation
 ////////////////////////
 template <class I, class A, class C>
-inline poly_vector<I, A, C>::poly_vector()
+inline vector<I, A, C>::vector()
     : _free_elem {}
     , _begin_storage {}
     , _align_max { default_alignement }
@@ -890,15 +887,15 @@ inline poly_vector<I, A, C>::poly_vector()
 }
 
 template <class I, class A, class C>
-inline poly_vector<I, A, C>::poly_vector(const allocator_type& alloc)
-    : poly_vector_impl::allocator_base<allocator_type>(alloc)
+inline vector<I, A, C>::vector(const allocator_type& alloc)
+    : vector_impl::allocator_base<allocator_type>(alloc)
     , _free_elem {}
     , _begin_storage {}
     , _align_max { default_alignement } {};
 
 template <class I, class A, class C>
-inline poly_vector<I, A, C>::poly_vector(const poly_vector& other)
-    : poly_vector_impl::allocator_base<allocator_type>(other.base())
+inline vector<I, A, C>::vector(const vector& other)
+    : vector_impl::allocator_base<allocator_type>(other.base())
     , _free_elem { begin_elem() }
     , _begin_storage { begin_elem() + other.capacity() }
     , _align_max { other._align_max }
@@ -908,8 +905,8 @@ inline poly_vector<I, A, C>::poly_vector(const poly_vector& other)
 }
 
 template <class I, class A, class C>
-inline poly_vector<I, A, C>::poly_vector(poly_vector&& other) noexcept
-    : poly_vector_impl::allocator_base<allocator_type>(std::move(other.base()))
+inline vector<I, A, C>::vector(vector&& other) noexcept
+    : vector_impl::allocator_base<allocator_type>(std::move(other.base()))
     , _free_elem { other._free_elem }
     , _begin_storage { other._begin_storage }
     , _align_max { other._align_max }
@@ -918,10 +915,10 @@ inline poly_vector<I, A, C>::poly_vector(poly_vector&& other) noexcept
     other._align_max                        = default_alignement;
 }
 
-template <class I, class A, class C> inline poly_vector<I, A, C>::~poly_vector() { tidy(); }
+template <class I, class A, class C> inline vector<I, A, C>::~vector() { tidy(); }
 
 template <class I, class A, class C>
-inline poly_vector<I, A, C>& poly_vector<I, A, C>::operator=(const poly_vector& rhs)
+inline vector<I, A, C>& vector<I, A, C>::operator=(const vector& rhs)
 {
     if (this != &rhs) {
         copy_assign_impl(rhs);
@@ -930,7 +927,7 @@ inline poly_vector<I, A, C>& poly_vector<I, A, C>::operator=(const poly_vector& 
 }
 
 template <class I, class A, class C>
-inline poly_vector<I, A, C>& poly_vector<I, A, C>::operator=(poly_vector&& rhs) noexcept
+inline vector<I, A, C>& vector<I, A, C>::operator=(vector&& rhs) noexcept
 {
     if (this != &rhs) {
         move_assign_impl(std::move(rhs));
@@ -940,7 +937,7 @@ inline poly_vector<I, A, C>& poly_vector<I, A, C>::operator=(poly_vector&& rhs) 
 
 template <class I, class A, class C>
 template <typename T>
-inline auto poly_vector<I, A, C>::push_back(T&& obj)
+inline auto vector<I, A, C>::push_back(T&& obj)
     -> std::enable_if_t<std::is_base_of<interface_type, std::decay_t<T>>::value>
 {
     using TT         = std::decay_t<T>;
@@ -955,7 +952,7 @@ inline auto poly_vector<I, A, C>::push_back(T&& obj)
 
 template <class IF, class Allocator, class CloningPolicy>
 template <typename T, typename... Args>
-inline auto poly_vector<IF, Allocator, CloningPolicy>::emplace_back(Args&&... args)
+inline auto vector<IF, Allocator, CloningPolicy>::emplace_back(Args&&... args)
     -> std::enable_if_t<std::is_base_of<interface_type, T>::value, interface_reference>
 {
     constexpr auto s = sizeof(T);
@@ -968,18 +965,18 @@ inline auto poly_vector<IF, Allocator, CloningPolicy>::emplace_back(Args&&... ar
     return back();
 }
 
-template <class I, class A, class C> inline void poly_vector<I, A, C>::pop_back() noexcept
+template <class I, class A, class C> inline void vector<I, A, C>::pop_back() noexcept
 {
     clear_till_end(_free_elem - 1);
 }
 
-template <class I, class A, class C> inline void poly_vector<I, A, C>::clear() noexcept
+template <class I, class A, class C> inline void vector<I, A, C>::clear() noexcept
 {
     clear_till_end(begin_elem());
     _align_max = default_alignement;
 }
 
-template <class I, class A, class C> inline void poly_vector<I, A, C>::swap(poly_vector& x) noexcept
+template <class I, class A, class C> inline void vector<I, A, C>::swap(vector& x) noexcept
 {
     using std::swap;
     base().swap(x.base());
@@ -989,13 +986,13 @@ template <class I, class A, class C> inline void poly_vector<I, A, C>::swap(poly
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::erase(const_iterator position) -> iterator
+inline auto vector<I, A, C>::erase(const_iterator position) -> iterator
 {
     return erase(position, position + 1);
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::erase(const_iterator first, const_iterator last) -> iterator
+inline auto vector<I, A, C>::erase(const_iterator first, const_iterator last) -> iterator
 {
     auto eptr_first = begin_elem() + (first - begin());
     auto ret        = last == end() ? clear_till_end(eptr_first)
@@ -1006,107 +1003,107 @@ inline auto poly_vector<I, A, C>::erase(const_iterator first, const_iterator las
     return ret;
 }
 
-template <class I, class A, class C> inline auto poly_vector<I, A, C>::begin() noexcept -> iterator
+template <class I, class A, class C> inline auto vector<I, A, C>::begin() noexcept -> iterator
 {
     return iterator(begin_elem());
 }
 
-template <class I, class A, class C> inline auto poly_vector<I, A, C>::end() noexcept -> iterator
+template <class I, class A, class C> inline auto vector<I, A, C>::end() noexcept -> iterator
 {
     return iterator(end_elem());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::begin() const noexcept -> const_iterator
+inline auto vector<I, A, C>::begin() const noexcept -> const_iterator
 {
     return const_iterator(begin_elem());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::end() const noexcept -> const_iterator
+inline auto vector<I, A, C>::end() const noexcept -> const_iterator
 {
     return const_iterator(end_elem());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::rbegin() noexcept -> reverse_iterator
+inline auto vector<I, A, C>::rbegin() noexcept -> reverse_iterator
 {
     return std::make_reverse_iterator(end());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::rend() noexcept -> reverse_iterator
+inline auto vector<I, A, C>::rend() noexcept -> reverse_iterator
 {
     return std::make_reverse_iterator(begin());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::rbegin() const noexcept -> const_reverse_iterator
+inline auto vector<I, A, C>::rbegin() const noexcept -> const_reverse_iterator
 {
     return std::make_reverse_iterator(end());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::rend() const noexcept -> const_reverse_iterator
+inline auto vector<I, A, C>::rend() const noexcept -> const_reverse_iterator
 {
     return std::make_reverse_iterator(begin());
 }
 
 template <class IF, class Allocator, class CloningPolicy>
-inline auto poly_vector<IF, Allocator, CloningPolicy>::cbegin() const noexcept -> const_iterator
+inline auto vector<IF, Allocator, CloningPolicy>::cbegin() const noexcept -> const_iterator
 {
     return begin();
 }
 
 template <class IF, class Allocator, class CloningPolicy>
-inline auto poly_vector<IF, Allocator, CloningPolicy>::cend() const noexcept -> const_iterator
+inline auto vector<IF, Allocator, CloningPolicy>::cend() const noexcept -> const_iterator
 {
     return end();
 }
 
-template <class I, class A, class C> inline size_t poly_vector<I, A, C>::size() const noexcept
+template <class I, class A, class C> inline size_t vector<I, A, C>::size() const noexcept
 {
     return static_cast<size_t>(_free_elem - begin_elem());
 }
 
 template <class I, class A, class C>
-inline std::pair<size_t, size_t> poly_vector<I, A, C>::sizes() const noexcept
+inline std::pair<size_t, size_t> vector<I, A, C>::sizes() const noexcept
 {
     return std::make_pair(size(), avg_obj_size());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::capacity() const noexcept -> size_type
+inline auto vector<I, A, C>::capacity() const noexcept -> size_type
 {
     return storage_size(begin_elem(), _begin_storage) / sizeof(elem_ptr);
 }
 
 template <class I, class A, class C>
-inline std::pair<size_t, size_t> poly_vector<I, A, C>::capacities() const noexcept
+inline std::pair<size_t, size_t> vector<I, A, C>::capacities() const noexcept
 {
     return std::make_pair(capacity(), storage_size(_begin_storage, this->_end_storage));
 }
 
-template <class I, class A, class C> inline bool poly_vector<I, A, C>::empty() const noexcept
+template <class I, class A, class C> inline bool vector<I, A, C>::empty() const noexcept
 {
     return begin_elem() == _free_elem;
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::max_size() const noexcept -> size_type
+inline auto vector<I, A, C>::max_size() const noexcept -> size_type
 {
     auto avg = avg_obj_size() ? avg_obj_size() : 4 * sizeof(void_pointer);
     return allocator_traits::max_size(this->get_allocator_ref()) / (sizeof(elem_ptr) + avg);
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::max_align() const noexcept -> size_type
+inline auto vector<I, A, C>::max_align() const noexcept -> size_type
 {
     return _align_max;
 }
 
 template <class I, class A, class C>
-inline void poly_vector<I, A, C>::reserve(size_type n, size_type avg_size, size_type max_align)
+inline void vector<I, A, C>::reserve(size_type n, size_type avg_size, size_type max_align)
 {
     using copy = std::conditional_t<interface_type_noexcept_movable::value, std::false_type,
         std::true_type>;
@@ -1114,96 +1111,96 @@ inline void poly_vector<I, A, C>::reserve(size_type n, size_type avg_size, size_
         return;
     }
     if (n > max_size()) {
-        throw std::length_error("poly_vector reserve size too big");
+        throw std::length_error("poly::vector reserve size too big");
     }
     increase_storage(n, avg_size, max_align, copy {});
 }
 
-template <class I, class A, class C> inline void poly_vector<I, A, C>::reserve(size_type n)
+template <class I, class A, class C> inline void vector<I, A, C>::reserve(size_type n)
 {
     reserve(n, default_avg_size);
 }
 
 template <class I, class A, class C>
-inline void poly_vector<I, A, C>::reserve(std::pair<size_t, size_t> s)
+inline void vector<I, A, C>::reserve(std::pair<size_t, size_t> s)
 {
     reserve(s.first, s.second);
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::operator[](size_t n) noexcept -> interface_reference
+inline auto vector<I, A, C>::operator[](size_t n) noexcept -> interface_reference
 {
     return *begin_elem()[n].ptr.second;
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::operator[](size_t n) const noexcept -> const_interface_reference
+inline auto vector<I, A, C>::operator[](size_t n) const noexcept -> const_interface_reference
 {
     return *begin_elem()[n].ptr.second;
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::at(size_t n) -> interface_reference
+inline auto vector<I, A, C>::at(size_t n) -> interface_reference
 {
     if (n >= size()) {
-        throw std::out_of_range { "poly_vector out of range access" };
+        throw std::out_of_range { "poly::vector out of range access" };
     };
     return (*this)[n];
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::at(size_t n) const -> const_interface_reference
+inline auto vector<I, A, C>::at(size_t n) const -> const_interface_reference
 {
     if (n >= size()) {
-        throw std::out_of_range { "poly_vector out of range access" };
+        throw std::out_of_range { "poly::vector out of range access" };
     };
     return (*this)[n];
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::front() noexcept -> interface_reference
+inline auto vector<I, A, C>::front() noexcept -> interface_reference
 {
     return (*this)[0];
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::front() const noexcept -> const_interface_reference
+inline auto vector<I, A, C>::front() const noexcept -> const_interface_reference
 {
     return (*this)[0];
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::back() noexcept -> interface_reference
+inline auto vector<I, A, C>::back() noexcept -> interface_reference
 {
     return (*this)[size() - 1];
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::back() const noexcept -> const_interface_reference
+inline auto vector<I, A, C>::back() const noexcept -> const_interface_reference
 {
     return (*this)[size() - 1];
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::data() noexcept -> std::pair<void_pointer, void_pointer>
+inline auto vector<I, A, C>::data() noexcept -> std::pair<void_pointer, void_pointer>
 {
     return std::make_pair(base()._storage, base()._end_storage);
 }
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::data() const noexcept
+inline auto vector<I, A, C>::data() const noexcept
     -> std::pair<const_void_pointer, const_void_pointer>
 {
     return std::make_pair(base()._storage, base()._end_storage);
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::get_allocator() const noexcept -> allocator_type
+inline auto vector<I, A, C>::get_allocator() const noexcept -> allocator_type
 {
     return my_base::get_allocator_ref();
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::next_aligned_storage(void_pointer p, size_t align) noexcept
+inline auto vector<I, A, C>::next_aligned_storage(void_pointer p, size_t align) noexcept
     -> void_pointer
 {
     auto v = static_cast<pointer>(p) - static_cast<pointer>(nullptr);
@@ -1212,8 +1209,7 @@ inline auto poly_vector<I, A, C>::next_aligned_storage(void_pointer p, size_t al
 }
 
 template <class I, class A, class C>
-inline size_t poly_vector<I, A, C>::storage_size(
-    const_void_pointer b, const_void_pointer e) noexcept
+inline size_t vector<I, A, C>::storage_size(const_void_pointer b, const_void_pointer e) noexcept
 {
     using const_pointer_t = typename allocator_traits::const_pointer;
     return static_cast<size_t>(static_cast<const_pointer_t>(e) - static_cast<const_pointer_t>(b));
@@ -1221,7 +1217,7 @@ inline size_t poly_vector<I, A, C>::storage_size(
 
 template <class I, class A, class C>
 template <typename CopyOrMove>
-inline void poly_vector<I, A, C>::increase_storage(
+inline void vector<I, A, C>::increase_storage(
     size_t desired_size, size_t curr_elem_size, size_t align, CopyOrMove /*unused*/)
 {
     auto    sizes = calculate_storage_size(desired_size, curr_elem_size, align);
@@ -1231,7 +1227,7 @@ inline void poly_vector<I, A, C>::increase_storage(
 }
 
 template <class I, class A, class C>
-inline void poly_vector<I, A, C>::obtain_storage(
+inline void vector<I, A, C>::obtain_storage(
     my_base&& a, size_t n, size_t max_align, std::true_type /*unused*/)
 {
     auto ret = poly_uninitialized_copy(
@@ -1243,7 +1239,7 @@ inline void poly_vector<I, A, C>::obtain_storage(
 }
 
 template <class I, class A, class C>
-inline void poly_vector<I, A, C>::obtain_storage(
+inline void vector<I, A, C>::obtain_storage(
     my_base&& a, size_t n, size_t max_align, std::false_type /*unused*/) noexcept
 {
     _align_max = max_align;
@@ -1256,7 +1252,7 @@ inline void poly_vector<I, A, C>::obtain_storage(
 }
 
 template <class IF, class Allocator, class CloningPolicy>
-inline void poly_vector<IF, Allocator, CloningPolicy>::init_layout(
+inline void vector<IF, Allocator, CloningPolicy>::init_layout(
     size_t storage_size, size_t capacity, size_t align_max)
 {
     base().allocate(storage_size);
@@ -1264,19 +1260,19 @@ inline void poly_vector<IF, Allocator, CloningPolicy>::init_layout(
     _align_max = align_max;
 }
 
-template <class I, class A, class C> inline auto poly_vector<I, A, C>::base() noexcept -> my_base&
+template <class I, class A, class C> inline auto vector<I, A, C>::base() noexcept -> my_base&
 {
     return *this;
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::base() const noexcept -> const my_base&
+inline auto vector<I, A, C>::base() const noexcept -> const my_base&
 {
     return *this;
 }
 
 template <class IF, class Allocator, class CloningPolicy>
-inline auto poly_vector<IF, Allocator, CloningPolicy>::poly_uninitialized_copy(my_base& a,
+inline auto vector<IF, Allocator, CloningPolicy>::poly_uninitialized_copy(my_base& a,
     void_pointer dst_ptr, elem_ptr_const_pointer begin, elem_ptr_const_pointer _free,
     elem_ptr_const_pointer end, size_t max_align) -> poly_copy_descr
 {
@@ -1308,7 +1304,7 @@ inline auto poly_vector<IF, Allocator, CloningPolicy>::poly_uninitialized_copy(m
 }
 
 template <class IF, class Allocator, class CloningPolicy>
-inline auto poly_vector<IF, Allocator, CloningPolicy>::poly_uninitialized_move(my_base& a,
+inline auto vector<IF, Allocator, CloningPolicy>::poly_uninitialized_move(my_base& a,
     void_pointer dst_ptr, elem_ptr_const_pointer begin, elem_ptr_const_pointer _free,
     elem_ptr_const_pointer end, size_t max_align) noexcept -> poly_copy_descr
 {
@@ -1330,7 +1326,7 @@ inline auto poly_vector<IF, Allocator, CloningPolicy>::poly_uninitialized_move(m
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::copy_assign_impl(const poly_vector& rhs) -> poly_vector&
+inline auto vector<I, A, C>::copy_assign_impl(const vector& rhs) -> vector&
 {
     tidy();
     base() = rhs.base();
@@ -1342,7 +1338,7 @@ inline auto poly_vector<I, A, C>::copy_assign_impl(const poly_vector& rhs) -> po
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::move_assign_impl(poly_vector&& rhs) noexcept -> poly_vector&
+inline auto vector<I, A, C>::move_assign_impl(vector&& rhs) noexcept -> vector&
 {
     using std::swap;
     base().swap_with_propagate(
@@ -1352,7 +1348,7 @@ inline auto poly_vector<I, A, C>::move_assign_impl(poly_vector&& rhs) noexcept -
     return *this;
 }
 
-template <class I, class A, class C> inline void poly_vector<I, A, C>::tidy() noexcept
+template <class I, class A, class C> inline void vector<I, A, C>::tidy() noexcept
 {
     clear();
     for (auto i = begin_elem(); i != begin_elem() + capacity(); ++i) {
@@ -1363,15 +1359,15 @@ template <class I, class A, class C> inline void poly_vector<I, A, C>::tidy() no
 }
 
 template <class I, class A, class C>
-inline void poly_vector<I, A, C>::destroy_elem(elem_ptr_pointer p) noexcept
+inline void vector<I, A, C>::destroy_elem(elem_ptr_pointer p) noexcept
 {
     base().destroy(p->ptr.second);
     *p = elem_ptr();
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::destroy_range(
-    elem_ptr_pointer first, elem_ptr_pointer last) noexcept -> std::pair<void_pointer, void_pointer>
+inline auto vector<I, A, C>::destroy_range(elem_ptr_pointer first, elem_ptr_pointer last) noexcept
+    -> std::pair<void_pointer, void_pointer>
 {
     std::pair<void_pointer, void_pointer> ret {};
     if (first != last) {
@@ -1385,8 +1381,8 @@ inline auto poly_vector<I, A, C>::destroy_range(
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::erase_internal_range(
-    elem_ptr_pointer first, elem_ptr_pointer last) -> iterator
+inline auto vector<I, A, C>::erase_internal_range(elem_ptr_pointer first, elem_ptr_pointer last)
+    -> iterator
 {
     assert(first != last);
     assert(last != end_elem());
@@ -1421,20 +1417,20 @@ inline auto poly_vector<I, A, C>::erase_internal_range(
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::clear_till_end(elem_ptr_pointer first) noexcept -> iterator
+inline auto vector<I, A, C>::clear_till_end(elem_ptr_pointer first) noexcept -> iterator
 {
     destroy_range(first, _free_elem);
     _free_elem = first;
     return end();
 }
 
-template <class I, class A, class C> inline void poly_vector<I, A, C>::set_ptrs(poly_copy_descr p)
+template <class I, class A, class C> inline void vector<I, A, C>::set_ptrs(poly_copy_descr p)
 {
     _free_elem     = std::get<0>(p);
     _begin_storage = std::get<1>(p);
 }
 
-template <class I, class A, class C> inline void poly_vector<I, A, C>::swap_ptrs(poly_vector&& rhs)
+template <class I, class A, class C> inline void vector<I, A, C>::swap_ptrs(vector&& rhs)
 {
     using std::swap;
     swap(_free_elem, rhs._free_elem);
@@ -1443,7 +1439,7 @@ template <class I, class A, class C> inline void poly_vector<I, A, C>::swap_ptrs
 
 template <class I, class A, class C>
 template <class T, typename... Args>
-inline void poly_vector<I, A, C>::push_back_new_elem(type_tag<T> t, Args&&... args)
+inline void vector<I, A, C>::push_back_new_elem(type_tag<T> t, Args&&... args)
 {
     constexpr auto s = sizeof(T);
     constexpr auto a = alignof(T);
@@ -1460,18 +1456,16 @@ inline void poly_vector<I, A, C>::push_back_new_elem(type_tag<T> t, Args&&... ar
 
 template <class I, class A, class C>
 template <class T, typename... Args>
-inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase(
-    type_tag<T> t, Args&&... args)
+inline void vector<I, A, C>::push_back_new_elem_w_storage_increase(type_tag<T> t, Args&&... args)
 {
     constexpr auto s                = sizeof(T);
     constexpr auto a                = alignof(T);
     constexpr auto noexcept_movable = interface_type_noexcept_movable::value;
     constexpr auto nothrow_ctor     = std::is_nothrow_constructible<T, Args...>::value;
     //////////////////////////////////////////
-    const auto  new_capacity = std::max(capacity() * 2, size_t(1));
-    const auto  sizes        = calculate_storage_size(new_capacity, s, a);
-    poly_vector v(
-        allocator_traits::select_on_container_copy_construction(base().get_allocator_ref()));
+    const auto new_capacity = std::max(capacity() * 2, size_t(1));
+    const auto sizes        = calculate_storage_size(new_capacity, s, a);
+    vector v(allocator_traits::select_on_container_copy_construction(base().get_allocator_ref()));
     v.init_layout(sizes.first, new_capacity, sizes.second);
     push_back_new_elem_w_storage_increase_copy(
         v, std::integral_constant < bool, noexcept_movable&& nothrow_ctor > {});
@@ -1480,23 +1474,23 @@ inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase(
 }
 
 template <class I, class A, class C>
-inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase_copy(
-    poly_vector& v, std::true_type /*unused*/)
+inline void vector<I, A, C>::push_back_new_elem_w_storage_increase_copy(
+    vector& v, std::true_type /*unused*/)
 {
     v.set_ptrs(poly_uninitialized_move(base(), v.begin_elem(), begin_elem(), end_elem(),
         std::next(begin_elem(), v.capacity()), v.max_align()));
 }
 
 template <class I, class A, class C>
-inline void poly_vector<I, A, C>::push_back_new_elem_w_storage_increase_copy(
-    poly_vector& v, std::false_type /*unused*/)
+inline void vector<I, A, C>::push_back_new_elem_w_storage_increase_copy(
+    vector& v, std::false_type /*unused*/)
 {
     v.set_ptrs(poly_uninitialized_copy(v.base(), v.begin_elem(), begin_elem(), _free_elem,
         std::next(begin_elem(), v.capacity()), v.max_align()));
 }
 
 template <class I, class A, class C>
-inline bool poly_vector<I, A, C>::can_construct_new_elem(size_t s, size_t align) noexcept
+inline bool vector<I, A, C>::can_construct_new_elem(size_t s, size_t align) noexcept
 {
     if (end_elem() == _begin_storage || align > _align_max) {
         return false;
@@ -1506,13 +1500,13 @@ inline bool poly_vector<I, A, C>::can_construct_new_elem(size_t s, size_t align)
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::next_aligned_storage(size_t align) const noexcept -> void_pointer
+inline auto vector<I, A, C>::next_aligned_storage(size_t align) const noexcept -> void_pointer
 {
     return next_aligned_storage(free_storage(), align);
 }
 
 template <class I, class A, class C>
-inline size_t poly_vector<I, A, C>::avg_obj_size(size_t align) const noexcept
+inline size_t vector<I, A, C>::avg_obj_size(size_t align) const noexcept
 {
     return !empty()
         ? (static_cast<size_t>(storage_size(_begin_storage, next_aligned_storage(align))) + size()
@@ -1522,44 +1516,44 @@ inline size_t poly_vector<I, A, C>::avg_obj_size(size_t align) const noexcept
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::begin_elem() noexcept -> elem_ptr_pointer
+inline auto vector<I, A, C>::begin_elem() noexcept -> elem_ptr_pointer
 {
     return static_cast<elem_ptr_pointer>(this->storage());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::cbegin_elem() const noexcept -> elem_ptr_const_pointer
+inline auto vector<I, A, C>::cbegin_elem() const noexcept -> elem_ptr_const_pointer
 {
     return begin_elem();
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::end_elem() noexcept -> elem_ptr_pointer
+inline auto vector<I, A, C>::end_elem() noexcept -> elem_ptr_pointer
 {
     return static_cast<elem_ptr_pointer>(_free_elem);
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::begin_elem() const noexcept -> elem_ptr_const_pointer
+inline auto vector<I, A, C>::begin_elem() const noexcept -> elem_ptr_const_pointer
 {
     return static_cast<elem_ptr_const_pointer>(this->storage());
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::end_elem() const noexcept -> elem_ptr_const_pointer
+inline auto vector<I, A, C>::end_elem() const noexcept -> elem_ptr_const_pointer
 {
     return static_cast<elem_ptr_const_pointer>(_free_elem);
 }
 
 template <class IF, class Allocator, class CloningPolicy>
-inline auto poly_vector<IF, Allocator, CloningPolicy>::last_elem() const noexcept
+inline auto vector<IF, Allocator, CloningPolicy>::last_elem() const noexcept
     -> elem_ptr_const_pointer
 {
     return static_cast<elem_ptr_const_pointer>(_begin_storage);
 }
 
 template <class IF, class Allocator, class CloningPolicy>
-inline auto poly_vector<IF, Allocator, CloningPolicy>::free_storage() const noexcept -> void_pointer
+inline auto vector<IF, Allocator, CloningPolicy>::free_storage() const noexcept -> void_pointer
 {
     if (_free_elem == this->storage()) {
         return this->_begin_storage;
@@ -1568,15 +1562,14 @@ inline auto poly_vector<IF, Allocator, CloningPolicy>::free_storage() const noex
     return static_cast<pointer>(prev_elem->ptr.first) + prev_elem->size();
 }
 
-template <class I, class A, class C>
-inline void poly_vector<I, A, C>::init_ptrs(size_t cap) noexcept
+template <class I, class A, class C> inline void vector<I, A, C>::init_ptrs(size_t cap) noexcept
 {
     _free_elem     = begin_elem();
     _begin_storage = begin_elem() + cap;
 }
 
 template <class I, class A, class C>
-inline std::pair<size_t, size_t> poly_vector<I, A, C>::calculate_storage_size(
+inline std::pair<size_t, size_t> vector<I, A, C>::calculate_storage_size(
     size_t new_size, size_t new_elem_size, size_t new_alignment) const noexcept
 {
     const auto max_alignment            = std::max(new_alignment, max_align());
@@ -1598,15 +1591,14 @@ inline std::pair<size_t, size_t> poly_vector<I, A, C>::calculate_storage_size(
 }
 
 template <class I, class A, class C>
-inline auto poly_vector<I, A, C>::occupied_storage(elem_ptr_const_pointer p) const noexcept
-    -> size_type
+inline auto vector<I, A, C>::occupied_storage(elem_ptr_const_pointer p) const noexcept -> size_type
 {
     return ((p->size() + _align_max - 1) / _align_max) * _align_max;
 }
 
 template <class I, class A, class C>
 template <class descendant_type>
-inline auto poly_vector<I, A, C>::insert(const_iterator position, descendant_type&& val)
+inline auto vector<I, A, C>::insert(const_iterator position, descendant_type&& val)
     -> std::enable_if_t<std::is_base_of<interface_type, std::decay_t<descendant_type>>::value,
         iterator>
 {
@@ -1623,8 +1615,7 @@ inline auto poly_vector<I, A, C>::insert(const_iterator position, descendant_typ
     const auto sizes     = calculate_storage_size(new_size, s, a);
     auto       from      = std::next(begin_elem(), new_index);
 
-    poly_vector v(
-        allocator_traits::select_on_container_copy_construction(base().get_allocator_ref()));
+    vector v(allocator_traits::select_on_container_copy_construction(base().get_allocator_ref()));
     v.init_layout(sizes.first, new_size, sizes.second);
     v.set_ptrs(poly_uninitialized_copy(v.base(), v.begin_elem(), begin_elem(), from,
         std::next(cbegin_elem(), new_size), v.max_align()));

@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <vector>
 
-#include <poly_vector.h>
+#include <poly/vector.h>
 
 using namespace poly;
 
@@ -71,7 +71,8 @@ private:
 
 using namespace std::chrono;
 
-int main(int argc, char* argv[]) try {
+int main(int argc, char* argv[])
+try {
 
     unsigned int iteration_count {};
     unsigned int num_objs {};
@@ -91,7 +92,7 @@ int main(int argc, char* argv[]) try {
     }
     constexpr auto          align = cache_line_size;
     constexpr auto          size  = std::max(sizeof(Implementation1), sizeof(Implementation2));
-    poly_vector<Interface>  pv;
+    vector<Interface>       pv;
     std::vector<Interface*> sv;
     std::cout << "Num of objs: " << num_objs << '\n';
     pv.reserve(num_objs, size, align);

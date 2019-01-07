@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-  <Type Name="poly::poly_vector&lt;*&gt;">
+  <Type Name="poly::vector&lt;*&gt;">
     <DisplayString>{{ size={_free_elem-(elem_ptr*)_storage} , capacity={(elem_ptr*)_begin_storage-(elem_ptr*)_storage} }}</DisplayString>
     <Expand>
       <Item Name="size">_free_elem-(elem_ptr*)_storage</Item>
