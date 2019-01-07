@@ -17,8 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-#ifndef POLY_VECTOR_H_
-#define POLY_VECTOR_H_
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -182,7 +181,7 @@ namespace poly_vector_impl {
 
         allocator_base(const allocator_base& a)
             : allocator_base(
-                  allocator_traits::select_on_container_copy_construction(a.get_allocator_ref()))
+                allocator_traits::select_on_container_copy_construction(a.get_allocator_ref()))
         {
             if (a.size()) {
                 allocate(a.size());
@@ -1647,6 +1646,4 @@ inline auto poly_vector<I, A, C>::insert(const_iterator position, descendant_typ
     return std::next(begin(), new_index);
 }
 
-} // namespace estd
-
-#endif // POLY_VECTOR_H_
+} // namespace poly
