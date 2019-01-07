@@ -682,6 +682,8 @@ public:
 
     vector& operator=(const vector& rhs);
     vector& operator=(vector&& rhs) noexcept;
+    // TODO: implement construcor, where all T :< IF
+    // explicit vector(T&&...);
     ///////////////////////////////////////////////
     // Modifiers
     ///////////////////////////////////////////////
