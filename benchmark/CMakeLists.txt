@@ -9,5 +9,5 @@ set(poly_vector_benchmark_source_files  src/main.cpp)
 add_executable(poly_vector_benchmark  ${poly_vector_benchmark_source_files} )
 
 target_link_libraries(poly_vector_benchmark PolyVector)
-set_property(TARGET poly_vector_benchmark PROPERTY CXX_STANDARD 14)
+
 

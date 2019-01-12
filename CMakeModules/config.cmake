@@ -6,7 +6,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CXX_STANDARD 14)
+
+if(NOT CMAKE_CXX_STANDARD)
+set(CMAKE_CXX_STANDARD 14)
+endif()
 
 if(UNIX)
     SET( CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_DEBUG} -fPIC -fprofile-arcs -ftest-coverage -fno-inline -fno-inline-small-functions -fno-default-inline -O0"

@@ -24,7 +24,7 @@ endif()
 
 target_link_libraries(poly_vector_test PolyVector Catch_lib)
 set_target_properties(poly_vector_test PROPERTIES LINKER_LANGUAGE CXX)
-set_property(TARGET poly_vector_test PROPERTY CXX_STANDARD 14)
+#set_property(TARGET poly_vector_test PROPERTY CXX_STANDARD 14)
 
 target_include_directories(poly_vector_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
