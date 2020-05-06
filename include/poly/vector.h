@@ -41,6 +41,44 @@ template <typename T> struct type_tag {
 
 namespace vector_impl {
 
+    // namespace concepts {
+    //    using namespace poly;
+    //    using namespace std;
+
+    //    template <typename InterfaceT, typename Allocator>
+    //    constexpr auto AllocatorPointerMatch = is_same_v<InterfaceT,
+    //        typename pointer_traits<typename allocator_traits<Allocator>::pointer>::element_type>;
+
+    //    template <typename T, typename InterfaceT, typename Allocator>
+    //    concept HasClone = requires(T cp, Allocator a)
+    //    {
+    //        {
+    //            cp.clone(a, declval<typename allocator_traits<Allocator>::pointer>(),
+    //                declval<typename allocator_traits<Allocator>::void_pointer>())
+    //        }
+    //        ->same_as<typename allocator_traits<Allocator>::pointer>;
+    //    };
+
+    //    template <typename T, typename InterfaceT, typename Allocator>
+    //    concept HasMove
+    //        = is_nothrow_move_constructible_v<T>&& is_nothrow_move_assignable_v<T>&& requires(
+    //            T cp, Allocator a)
+    //    {
+    //        {
+    //            cp.move(a, declval<typename allocator_traits<Allocator>::pointer>(),
+    //                declval<typename allocator_traits<Allocator>::void_pointer>())
+    //        }
+    //        ->same_as<typename allocator_traits<Allocator>::pointer>;
+    //    };
+
+    //    template <typename T, typename I, typename A, typename Derived>
+    //    concept CloningPolicy
+    //        = AllocatorPointerMatch<I, A>&& is_nothrow_constructible_v<T>&&
+    //              is_nothrow_copy_constructible_v<T>&& is_nothrow_copy_assignable_v<T>&& copyable<
+    //                  T> && (constructible_from<T, type_tag<Derived>> ||
+    //                  default_initializable<T>)&&(HasClone<T, I, A> || HasMove<T, I, A>);
+    //}
+
     template <typename T> struct TD;
 
     template <class TT> struct has_noexcept_movable {
@@ -120,15 +158,15 @@ namespace vector_impl {
         //////////////////////////////////////////////
         explicit allocator_base(const allocator_type& a = allocator_type())
             : allocator_type(a)
-            , _storage{}
-            , _end_storage{}
+            , _storage {}
+            , _end_storage {}
         {
         }
 
         explicit allocator_base(size_t n, const allocator_type& a = allocator_type())
             : allocator_type(a)
-            , _storage{}
-            , _end_storage{}
+            , _storage {}
+            , _end_storage {}
         {
             auto s       = get_allocator_ref().allocate(n);
             _storage     = s;
@@ -137,7 +175,7 @@ namespace vector_impl {
 
         allocator_base(const allocator_base& a)
             : allocator_base(
-                  allocator_traits::select_on_container_copy_construction(a.get_allocator_ref()))
+                allocator_traits::select_on_container_copy_construction(a.get_allocator_ref()))
         {
             if (a.size()) {
                 allocate(a.size());
@@ -146,15 +184,15 @@ namespace vector_impl {
 
         allocator_base(allocator_base&& a) noexcept
             : allocator_type(std::move(a.get_allocator_ref()))
-            , _storage{ a._storage }
-            , _end_storage{ a._end_storage }
+            , _storage { a._storage }
+            , _end_storage { a._end_storage }
         {
             a._storage = a._end_storage = nullptr;
         }
 
         allocator_base& operator=(const allocator_base& a)
         {
-            return copy_assign_impl(a, propagate_on_container_copy_assignment{});
+            return copy_assign_impl(a, propagate_on_container_copy_assignment {});
         }
 
         allocator_base& operator=(allocator_base&& a) = delete;
@@ -191,7 +229,7 @@ namespace vector_impl {
         {
             // if (!propagate_on_container_swap::value && !allocator_is_always_equal::value
             //    && get_allocator_ref() != x.get_allocator_ref()) -> Undefined behavior!!!
-            swap_with_propagate(x, propagate_on_container_swap{});
+            swap_with_propagate(x, propagate_on_container_swap {});
         }
 
         template <typename Propagate>
@@ -279,7 +317,7 @@ namespace vector_impl {
         static pointer move(const Policy& p, const allocator_type& a, pointer obj,
             void_pointer dest) noexcept(noexcept_movable::value)
         {
-            return move_impl(p, a, obj, dest, typename policy_impl::has_move_t{});
+            return move_impl(p, a, obj, dest, typename policy_impl::has_move_t {});
         }
 
     private:
@@ -310,7 +348,7 @@ class vector;
 template <typename CP, typename Constructible> struct CloningPolicyHolder : public CP {
     CloningPolicyHolder()                           = default;
     CloningPolicyHolder(const CloningPolicyHolder&) = default;
-    template <typename T> explicit CloningPolicyHolder(type_tag<T> /*unused*/) noexcept {}
+    template <typename T> explicit CloningPolicyHolder(type_tag<T> /*unused*/) noexcept { }
 };
 
 template <typename CP> struct CloningPolicyHolder<CP, std::true_type> : public CP {
@@ -345,8 +383,8 @@ struct vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
     using size_func_t  = size_descr_t();
     using policy_t     = CloningPolicy;
     vector_elem_ptr()
-        : ptr{}
-        , sf{}
+        : ptr {}
+        , sf {}
     {
     }
 
@@ -354,15 +392,15 @@ struct vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
         typename = std::enable_if_t<std::is_base_of<value_type, std::decay_t<T>>::value>>
     explicit vector_elem_ptr(type_tag<T> t, void_pointer s = nullptr, pointer i = nullptr) noexcept
         : base(t)
-        , ptr{ s, i }
-        , sf{ vector_elem_ptr::size_func<std::decay_t<T>>() }
+        , ptr { s, i }
+        , sf { vector_elem_ptr::size_func<std::decay_t<T>>() }
     {
     }
 
     vector_elem_ptr(const vector_elem_ptr& other) noexcept
         : base(other)
-        , ptr{ other.ptr }
-        , sf{ other.sf }
+        , ptr { other.ptr }
+        , sf { other.sf }
     {
     }
     vector_elem_ptr& operator=(const vector_elem_ptr& rhs) noexcept
@@ -388,7 +426,7 @@ struct vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
     ~vector_elem_ptr()
     {
         ptr.first = ptr.second = nullptr;
-        sf                     = size_descr_t{ 0, 0 };
+        sf                     = size_descr_t { 0, 0 };
     }
 
     std::pair<void_pointer, pointer> ptr;
@@ -427,7 +465,7 @@ struct no_cloning_policy {
     template <typename Allocator, typename Pointer, typename VoidPointer>
     Pointer clone(const Allocator& a, Pointer obj, VoidPointer dest) const
     {
-        throw no_cloning_exception{};
+        throw no_cloning_exception {};
     }
 };
 
@@ -444,7 +482,7 @@ struct delegate_cloning_policy {
     using allocator_type   = Allocator;
 
     delegate_cloning_policy() noexcept
-        : cf{}
+        : cf {}
     {
     }
 
@@ -461,7 +499,7 @@ struct delegate_cloning_policy {
     };
 
     delegate_cloning_policy(const delegate_cloning_policy& other) noexcept
-        : cf{ other.cf }
+        : cf { other.cf }
     {
     }
 
@@ -514,11 +552,11 @@ public:
     using const_reference = std::add_lvalue_reference_t<std::add_const_t<interface_type>>;
 
     vector_iterator()
-        : curr{}
+        : curr {}
     {
     }
     explicit vector_iterator(elem_ptr p)
-        : curr{ p }
+        : curr { p }
     {
     }
 
@@ -526,7 +564,7 @@ public:
         typename = std::enable_if_t<std::is_same<p_elem, T>::value
             && !std::is_same<vector_iterator, vector_iterator<T>>::value>>
     vector_iterator(const vector_iterator<T>& other)
-        : curr{ other.get() }
+        : curr { other.get() }
     {
     }
 
@@ -839,25 +877,25 @@ void swap(
 ////////////////////////
 template <class I, class A, class C>
 inline vector<I, A, C>::vector()
-    : _free_elem{}
-    , _begin_storage{}
-    , _align_max{ default_alignement }
+    : _free_elem {}
+    , _begin_storage {}
+    , _align_max { default_alignement }
 {
 }
 
 template <class I, class A, class C>
 inline vector<I, A, C>::vector(const allocator_type& alloc)
     : vector_impl::allocator_base<allocator_type>(alloc)
-    , _free_elem{}
-    , _begin_storage{}
-    , _align_max{ default_alignement } {};
+    , _free_elem {}
+    , _begin_storage {}
+    , _align_max { default_alignement } {};
 
 template <class I, class A, class C>
 inline vector<I, A, C>::vector(const vector& other)
     : vector_impl::allocator_base<allocator_type>(other.base())
-    , _free_elem{ begin_elem() }
-    , _begin_storage{ begin_elem() + other.capacity() }
-    , _align_max{ other._align_max }
+    , _free_elem { begin_elem() }
+    , _begin_storage { begin_elem() + other.capacity() }
+    , _align_max { other._align_max }
 {
     set_ptrs(poly_uninitialized_copy(base(), begin_elem(), other.begin_elem(), other.end_elem(),
         other.last_elem(), other.max_align()));
@@ -866,9 +904,9 @@ inline vector<I, A, C>::vector(const vector& other)
 template <class I, class A, class C>
 inline vector<I, A, C>::vector(vector&& other) noexcept
     : vector_impl::allocator_base<allocator_type>(std::move(other.base()))
-    , _free_elem{ other._free_elem }
-    , _begin_storage{ other._begin_storage }
-    , _align_max{ other._align_max }
+    , _free_elem { other._free_elem }
+    , _begin_storage { other._begin_storage }
+    , _align_max { other._align_max }
 {
     other._begin_storage = other._free_elem = nullptr;
     other._align_max                        = default_alignement;
@@ -903,9 +941,9 @@ inline auto vector<I, A, C>::push_back(T&& obj)
     constexpr auto s = sizeof(TT);
     constexpr auto a = alignof(TT);
     if (!can_construct_new_elem(s, a)) {
-        push_back_new_elem_w_storage_increase(type_tag<TT>{}, std::forward<T>(obj));
+        push_back_new_elem_w_storage_increase(type_tag<TT> {}, std::forward<T>(obj));
     } else {
-        push_back_new_elem(type_tag<TT>{}, std::forward<T>(obj));
+        push_back_new_elem(type_tag<TT> {}, std::forward<T>(obj));
     }
 }
 
@@ -917,9 +955,9 @@ inline auto vector<IF, Allocator, CloningPolicy>::emplace_back(Args&&... args)
     constexpr auto s = sizeof(T);
     constexpr auto a = alignof(T);
     if (!can_construct_new_elem(s, a)) {
-        push_back_new_elem_w_storage_increase(type_tag<T>{}, std::forward<Args>(args)...);
+        push_back_new_elem_w_storage_increase(type_tag<T> {}, std::forward<Args>(args)...);
     } else {
-        push_back_new_elem(type_tag<T>{}, std::forward<Args>(args)...);
+        push_back_new_elem(type_tag<T> {}, std::forward<Args>(args)...);
     }
     return back();
 }
@@ -1072,7 +1110,7 @@ inline void vector<I, A, C>::reserve(size_type n, size_type avg_size, size_type 
     if (n > max_size()) {
         throw std::length_error("poly::vector reserve size too big");
     }
-    increase_storage(n, avg_size, max_align, copy{});
+    increase_storage(n, avg_size, max_align, copy {});
 }
 
 template <class I, class A, class C> inline void vector<I, A, C>::reserve(size_type n)
@@ -1102,7 +1140,7 @@ template <class I, class A, class C>
 inline auto vector<I, A, C>::at(size_t n) -> interface_reference
 {
     if (n >= size()) {
-        throw std::out_of_range{ "poly::vector out of range access" };
+        throw std::out_of_range { "poly::vector out of range access" };
     };
     return (*this)[n];
 }
@@ -1111,7 +1149,7 @@ template <class I, class A, class C>
 inline auto vector<I, A, C>::at(size_t n) const -> const_interface_reference
 {
     if (n >= size()) {
-        throw std::out_of_range{ "poly::vector out of range access" };
+        throw std::out_of_range { "poly::vector out of range access" };
     };
     return (*this)[n];
 }
@@ -1182,7 +1220,7 @@ inline void vector<I, A, C>::increase_storage(
     auto    sizes = calculate_storage_size(desired_size, curr_elem_size, align);
     my_base s(sizes.first,
         allocator_traits::select_on_container_copy_construction(base().get_allocator_ref()));
-    obtain_storage(std::move(s), desired_size, sizes.second, CopyOrMove{});
+    obtain_storage(std::move(s), desired_size, sizes.second, CopyOrMove {});
 }
 
 template <class I, class A, class C>
@@ -1301,7 +1339,7 @@ inline auto vector<I, A, C>::move_assign_impl(vector&& rhs) noexcept -> vector&
 {
     using std::swap;
     base().swap_with_propagate(
-        rhs.base(), typename my_base::propagate_on_container_move_assignment{});
+        rhs.base(), typename my_base::propagate_on_container_move_assignment {});
     swap_ptrs(std::move(rhs));
     swap(_align_max, rhs._align_max);
     return *this;
@@ -1328,7 +1366,7 @@ template <class I, class A, class C>
 inline auto vector<I, A, C>::destroy_range(elem_ptr_pointer first, elem_ptr_pointer last) noexcept
     -> std::pair<void_pointer, void_pointer>
 {
-    std::pair<void_pointer, void_pointer> ret{};
+    std::pair<void_pointer, void_pointer> ret {};
     if (first != last) {
         ret.first  = first->ptr.first;
         ret.second = last != end_elem() ? last->ptr.first : base().end_storage();
@@ -1409,7 +1447,7 @@ inline void vector<I, A, C>::push_back_new_elem(type_tag<T> t, Args&&... args)
     auto nas = next_aligned_storage(_align_max);
     auto obj_ptr
         = base().construct(static_cast<typename traits::pointer>(nas), std::forward<Args>(args)...);
-    *_free_elem = elem_ptr(type_tag<T>{}, nas, obj_ptr);
+    *_free_elem = elem_ptr(type_tag<T> {}, nas, obj_ptr);
     ++_free_elem;
 }
 
@@ -1428,7 +1466,7 @@ inline void vector<I, A, C>::push_back_new_elem_w_storage_increase(type_tag<T> t
     v.init_layout(sizes.first, new_capacity, sizes.second);
     push_back_new_elem_w_storage_increase_copy(
         v, std::integral_constant < bool, noexcept_movable&& nothrow_ctor > {});
-    v.push_back_new_elem(type_tag<T>{}, std::forward<Args>(args)...);
+    v.push_back_new_elem(type_tag<T> {}, std::forward<Args>(args)...);
     this->swap(v);
 }
 
