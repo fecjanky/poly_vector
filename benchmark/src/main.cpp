@@ -68,7 +68,7 @@ using namespace std::chrono;
 
 template <typename T> T getArgv(int argc, char* argv[], int idx)
 {
-    if (argc < idx)
+    if (argc <= idx)
         throw std::runtime_error("invalid num of arguments");
     std::istringstream iss(argv[idx]);
     iss.exceptions(std::istream::failbit | std::istream::badbit);
