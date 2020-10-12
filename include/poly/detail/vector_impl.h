@@ -79,7 +79,27 @@ namespace vector_impl {
     };
 
     template <typename A>
-    using allocator_is_always_equal_t = typename allocator_is_always_equal<A>::type;
+    using allocator_is_always_equal_t   = typename allocator_is_always_equal<A>::type;
 #endif
+
+#if defined(POLY_VECTOR_HAS_CXX_STL_TYPE_ALIASES)
+    using std::add_const_t;
+    using std::add_lvalue_reference_t;
+    using std::conditional_t;
+    using std::decay_t;
+    using std::enable_if_t;
+    using std::remove_const_t;
+#else
+    template <typename T> using decay_t = typename std::decay<T>::type;
+    template <bool cond, typename T = void>
+    using enable_if_t = typename std::enable_if<cond, T>::type;
+    template <typename T>
+    using add_lvalue_reference_t = typename std::add_lvalue_reference<T>::type;
+    template <bool cond, typename T1, typename T2>
+    using conditional_t                        = typename std::conditional<cond, T1, T2>::type;
+    template <typename T> using remove_const_t = typename std::remove_const<T>::type;
+    template <typename T> using add_const_t    = typename std::add_const<T>::type;
+#endif
+
 } // namespace vector_impl
 } // namespace poly

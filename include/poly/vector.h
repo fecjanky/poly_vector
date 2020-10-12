@@ -45,7 +45,7 @@ namespace vector_impl {
 
     template <class TT> struct has_noexcept_movable {
         template <class U>
-        static std::true_type  test(U&&, typename std::decay_t<U>::noexcept_movable*);
+        static std::true_type  test(U&&, typename vector_impl::decay_t<U>::noexcept_movable*);
         static std::false_type test(...);
         static constexpr bool  value
             = std::is_same<std::true_type, decltype(test(std::declval<TT>(), nullptr))>::value;
@@ -235,7 +235,7 @@ namespace vector_impl {
         const_void_pointer                   end_storage() const noexcept { return _end_storage; }
         template <typename PointerType> void destroy(PointerType obj) const
         {
-            using T      = std::decay_t<decltype(*obj)>;
+            using T      = vector_impl::decay_t<decltype(*obj)>;
             using traits = typename allocator_traits::template rebind_traits<T>;
             static_assert(
                 std::is_same<PointerType, typename traits::pointer>::value, "invalid pointer type");
@@ -245,7 +245,7 @@ namespace vector_impl {
         template <typename PointerType, typename... Args>
         PointerType construct(PointerType storage, Args&&... args) const
         {
-            using T      = std::decay_t<decltype(*storage)>;
+            using T      = vector_impl::decay_t<decltype(*storage)>;
             using traits = typename allocator_traits::template rebind_traits<T>;
             static_assert(
                 std::is_same<PointerType, typename traits::pointer>::value, "invalid pointer type");
@@ -351,11 +351,12 @@ struct vector_elem_ptr : private CloningPolicyHolder<CloningPolicy,
     }
 
     template <typename T,
-        typename = std::enable_if_t<std::is_base_of<value_type, std::decay_t<T>>::value>>
+        typename
+        = vector_impl::enable_if_t<std::is_base_of<value_type, vector_impl::decay_t<T>>::value>>
     explicit vector_elem_ptr(type_tag<T> t, void_pointer s = nullptr, pointer i = nullptr) noexcept
         : base(t)
         , ptr{ s, i }
-        , sf{ vector_elem_ptr::size_func<std::decay_t<T>>() }
+        , sf{ vector_elem_ptr::size_func<vector_impl::decay_t<T>>() }
     {
     }
 
@@ -449,14 +450,15 @@ struct delegate_cloning_policy {
     }
 
     template <typename T,
-        typename = std::enable_if_t<!std::is_same<delegate_cloning_policy, std::decay_t<T>>::value>>
+        typename = vector_impl::enable_if_t<
+            !std::is_same<delegate_cloning_policy, vector_impl::decay_t<T>>::value>>
     explicit delegate_cloning_policy(type_tag<T> /*unused*/) noexcept
-        : cf(&delegate_cloning_policy::clone_func<std::decay_t<T>>)
+        : cf(&delegate_cloning_policy::clone_func<vector_impl::decay_t<T>>)
     {
         // this ensures, that if policy requires noexcept move construction that
         // a given T type also has it
-        static_assert(
-            !noexcept_movable::value || std::is_nothrow_move_constructible<std::decay_t<T>>::value,
+        static_assert(!noexcept_movable::value
+                || std::is_nothrow_move_constructible<vector_impl::decay_t<T>>::value,
             "delegate cloning policy requires noexcept move constructor");
     };
 
@@ -500,18 +502,19 @@ private:
 
 template <class ElemPtrT>
 class vector_iterator : public std::iterator<std::random_access_iterator_tag,
-                            typename std::remove_const_t<ElemPtrT>::value_type> {
+                            typename vector_impl::remove_const_t<ElemPtrT>::value_type> {
 public:
-    using p_elem         = std::remove_const_t<ElemPtrT>;
-    using interface_type = typename p_elem::value_type;
-    using elem
-        = std::conditional_t<std::is_const<ElemPtrT>::value, std::add_const_t<p_elem>, p_elem>;
+    using p_elem          = vector_impl::remove_const_t<ElemPtrT>;
+    using interface_type  = typename p_elem::value_type;
+    using elem            = vector_impl::conditional_t<std::is_const<ElemPtrT>::value,
+        vector_impl::add_const_t<p_elem>, p_elem>;
     using pointer         = typename p_elem::pointer;
     using const_pointer   = typename p_elem::const_pointer;
     using elem_ptr        = typename std::pointer_traits<pointer>::template rebind<elem>;
     using difference_type = typename std::pointer_traits<elem_ptr>::difference_type;
-    using reference       = std::add_lvalue_reference_t<interface_type>;
-    using const_reference = std::add_lvalue_reference_t<std::add_const_t<interface_type>>;
+    using reference       = vector_impl::add_lvalue_reference_t<interface_type>;
+    using const_reference
+        = vector_impl::add_lvalue_reference_t<vector_impl::add_const_t<interface_type>>;
 
     vector_iterator()
         : curr{}
@@ -523,7 +526,7 @@ public:
     }
 
     template <class T,
-        typename = std::enable_if_t<std::is_same<p_elem, T>::value
+        typename = vector_impl::enable_if_t<std::is_same<p_elem, T>::value
             && !std::is_same<vector_iterator, vector_iterator<T>>::value>>
     vector_iterator(const vector_iterator<T>& other)
         : curr{ other.get() }
@@ -626,7 +629,7 @@ public:
     ///////////////////////////////////////////////
     // Member types
     ///////////////////////////////////////////////
-    using interface_type = std::decay_t<IF>;
+    using interface_type = vector_impl::decay_t<IF>;
     using allocator_type =
         typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
 
@@ -644,20 +647,21 @@ public:
     using my_base                    = vector_impl::allocator_base<allocator_type>;
     using interface_pointer          = typename interface_allocator_traits::pointer;
     using const_interface_pointer    = typename interface_allocator_traits::const_pointer;
-    using interface_reference        = std::add_lvalue_reference_t<interface_type>;
-    using const_interface_reference = std::add_lvalue_reference_t<std::add_const_t<interface_type>>;
-    using pointer                   = typename my_base::pointer;
-    using const_pointer             = typename my_base::const_pointer;
-    using void_pointer              = typename my_base::void_pointer;
-    using const_void_pointer        = typename my_base::const_void_pointer;
-    using size_type                 = std::size_t;
-    using cloning_policy            = CloningPolicy;
-    using elem_ptr                  = vector_elem_ptr<cloning_policy, interface_allocator_traits>;
-    using iterator                  = vector_iterator<elem_ptr>;
-    using const_iterator            = vector_iterator<elem_ptr const>;
-    using reverse_iterator          = std::reverse_iterator<iterator>;
-    using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
-    using cloning_policy_traits = vector_impl::cloning_policy_traits<CloningPolicy, interface_type,
+    using interface_reference        = vector_impl::add_lvalue_reference_t<interface_type>;
+    using const_interface_reference
+        = vector_impl::add_lvalue_reference_t<vector_impl::add_const_t<interface_type>>;
+    using pointer                = typename my_base::pointer;
+    using const_pointer          = typename my_base::const_pointer;
+    using void_pointer           = typename my_base::void_pointer;
+    using const_void_pointer     = typename my_base::const_void_pointer;
+    using size_type              = std::size_t;
+    using cloning_policy         = CloningPolicy;
+    using elem_ptr               = vector_elem_ptr<cloning_policy, interface_allocator_traits>;
+    using iterator               = vector_iterator<elem_ptr>;
+    using const_iterator         = vector_iterator<elem_ptr const>;
+    using reverse_iterator       = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+    using cloning_policy_traits  = vector_impl::cloning_policy_traits<CloningPolicy, interface_type,
         interface_allocator_type>;
     using interface_type_noexcept_movable = typename cloning_policy_traits::noexcept_movable;
 
@@ -688,12 +692,12 @@ public:
     // Modifiers
     ///////////////////////////////////////////////
     template <typename T>
-    std::enable_if_t<std::is_base_of<interface_type, std::decay_t<T>>::value, void> push_back(
-        T&& obj);
+    vector_impl::enable_if_t<std::is_base_of<interface_type, vector_impl::decay_t<T>>::value, void>
+    push_back(T&& obj);
 
     template <typename T, typename... Args>
-    std::enable_if_t<std::is_base_of<interface_type, T>::value, interface_reference> emplace_back(
-        Args&&... args);
+    vector_impl::enable_if_t<std::is_base_of<interface_type, T>::value, interface_reference>
+    emplace_back(Args&&... args);
 
     void pop_back() noexcept;
     void clear() noexcept;
@@ -701,8 +705,8 @@ public:
 
     // TODO(fecja): insert, erase,emplace, emplace_back, assign?
     template <class descendant_type>
-    std::enable_if_t<std::is_base_of<interface_type, std::decay_t<descendant_type>>::value,
-        iterator>
+    vector_impl::enable_if_t<
+        std::is_base_of<interface_type, vector_impl::decay_t<descendant_type>>::value, iterator>
     insert(const_iterator position, descendant_type&& val);
     // template <class InputIterator>
     // iterator insert (const_iterator position, InputIterator first,
@@ -897,9 +901,9 @@ inline vector<I, A, C>& vector<I, A, C>::operator=(vector&& rhs) noexcept
 template <class I, class A, class C>
 template <typename T>
 inline auto vector<I, A, C>::push_back(T&& obj)
-    -> std::enable_if_t<std::is_base_of<interface_type, std::decay_t<T>>::value>
+    -> vector_impl::enable_if_t<std::is_base_of<interface_type, vector_impl::decay_t<T>>::value>
 {
-    using TT         = std::decay_t<T>;
+    using TT         = vector_impl::decay_t<T>;
     constexpr auto s = sizeof(TT);
     constexpr auto a = alignof(TT);
     if (!can_construct_new_elem(s, a)) {
@@ -912,7 +916,7 @@ inline auto vector<I, A, C>::push_back(T&& obj)
 template <class IF, class Allocator, class CloningPolicy>
 template <typename T, typename... Args>
 inline auto vector<IF, Allocator, CloningPolicy>::emplace_back(Args&&... args)
-    -> std::enable_if_t<std::is_base_of<interface_type, T>::value, interface_reference>
+    -> vector_impl::enable_if_t<std::is_base_of<interface_type, T>::value, interface_reference>
 {
     constexpr auto s = sizeof(T);
     constexpr auto a = alignof(T);
@@ -987,25 +991,25 @@ inline auto vector<I, A, C>::end() const noexcept -> const_iterator
 template <class I, class A, class C>
 inline auto vector<I, A, C>::rbegin() noexcept -> reverse_iterator
 {
-    return std::make_reverse_iterator(end());
+    return reverse_iterator(end());
 }
 
 template <class I, class A, class C>
 inline auto vector<I, A, C>::rend() noexcept -> reverse_iterator
 {
-    return std::make_reverse_iterator(begin());
+    return reverse_iterator(begin());
 }
 
 template <class I, class A, class C>
 inline auto vector<I, A, C>::rbegin() const noexcept -> const_reverse_iterator
 {
-    return std::make_reverse_iterator(end());
+    return const_reverse_iterator(end());
 }
 
 template <class I, class A, class C>
 inline auto vector<I, A, C>::rend() const noexcept -> const_reverse_iterator
 {
-    return std::make_reverse_iterator(begin());
+    return const_reverse_iterator(begin());
 }
 
 template <class IF, class Allocator, class CloningPolicy>
@@ -1064,7 +1068,7 @@ inline auto vector<I, A, C>::max_align() const noexcept -> size_type
 template <class I, class A, class C>
 inline void vector<I, A, C>::reserve(size_type n, size_type avg_size, size_type max_align)
 {
-    using copy = std::conditional_t<interface_type_noexcept_movable::value, std::false_type,
+    using copy = vector_impl::conditional_t<interface_type_noexcept_movable::value, std::false_type,
         std::true_type>;
     if (n <= capacities().first && avg_size <= capacities().second && _align_max >= max_align) {
         return;
@@ -1558,14 +1562,14 @@ inline auto vector<I, A, C>::occupied_storage(elem_ptr_const_pointer p) const no
 template <class I, class A, class C>
 template <class descendant_type>
 inline auto vector<I, A, C>::insert(const_iterator position, descendant_type&& val)
-    -> std::enable_if_t<std::is_base_of<interface_type, std::decay_t<descendant_type>>::value,
-        iterator>
+    -> vector_impl::enable_if_t<
+        std::is_base_of<interface_type, vector_impl::decay_t<descendant_type>>::value, iterator>
 {
     if (position == end()) {
         push_back(std::forward<descendant_type>(val));
         return std::prev(end());
     }
-    using TT         = std::decay_t<descendant_type>;
+    using TT         = vector_impl::decay_t<descendant_type>;
     constexpr auto s = sizeof(TT);
     constexpr auto a = alignof(TT);
     //////////////////////////////////////////
