@@ -463,7 +463,7 @@ struct no_cloning_exception : public std::exception {
 
 struct no_cloning_policy {
     template <typename Allocator, typename Pointer, typename VoidPointer>
-    Pointer clone(const Allocator& a, Pointer obj, VoidPointer dest) const
+    Pointer clone(const Allocator& /* a */, Pointer /* obj */, VoidPointer /* dest */) const
     {
         throw no_cloning_exception {};
     }
@@ -496,12 +496,14 @@ struct delegate_cloning_policy {
         static_assert(
             !noexcept_movable::value || std::is_nothrow_move_constructible<std::decay_t<T>>::value,
             "delegate cloning policy requires noexcept move constructor");
-    };
+    }
 
     delegate_cloning_policy(const delegate_cloning_policy& other) noexcept
         : cf { other.cf }
     {
     }
+
+    delegate_cloning_policy& operator=(const delegate_cloning_policy& other) noexcept = default;
 
     template <class T>
     static pointer clone_func(const Allocator& a, pointer obj, void_pointer dest, Operation op)
@@ -888,7 +890,9 @@ inline vector<I, A, C>::vector(const allocator_type& alloc)
     : vector_impl::allocator_base<allocator_type>(alloc)
     , _free_elem {}
     , _begin_storage {}
-    , _align_max { default_alignement } {};
+    , _align_max { default_alignement }
+{
+}
 
 template <class I, class A, class C>
 inline vector<I, A, C>::vector(const vector& other)
@@ -993,7 +997,7 @@ inline auto vector<I, A, C>::erase(const_iterator first, const_iterator last) ->
 {
     auto eptr_first = begin_elem() + (first - begin());
     auto ret        = last == end() ? clear_till_end(eptr_first)
-                             : erase_internal_range(eptr_first, begin_elem() + (last - begin()));
+                                    : erase_internal_range(eptr_first, begin_elem() + (last - begin()));
     if (empty()) {
         _align_max = default_alignement;
     }
@@ -1436,7 +1440,7 @@ template <class I, class A, class C> inline void vector<I, A, C>::swap_ptrs(vect
 
 template <class I, class A, class C>
 template <class T, typename... Args>
-inline void vector<I, A, C>::push_back_new_elem(type_tag<T> t, Args&&... args)
+inline void vector<I, A, C>::push_back_new_elem(type_tag<T> /* t */, Args&&... args)
 {
     constexpr auto s = sizeof(T);
     constexpr auto a = alignof(T);
@@ -1453,7 +1457,8 @@ inline void vector<I, A, C>::push_back_new_elem(type_tag<T> t, Args&&... args)
 
 template <class I, class A, class C>
 template <class T, typename... Args>
-inline void vector<I, A, C>::push_back_new_elem_w_storage_increase(type_tag<T> t, Args&&... args)
+inline void vector<I, A, C>::push_back_new_elem_w_storage_increase(
+    type_tag<T> /* t */, Args&&... args)
 {
     constexpr auto s                = sizeof(T);
     constexpr auto a                = alignof(T);
